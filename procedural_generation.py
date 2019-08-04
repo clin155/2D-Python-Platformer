@@ -108,6 +108,20 @@ def getSurfaceBlock(block, data, col):
 		if block[row][col] == True:
 			return (row, col)
 
+def createStartGrid(data):
+	numRows = len(data.grid)
+	numCols = len(data.grid[0])
+	baseTerrain = 2
+	for i in range(baseTerrain):
+		for col in range(numCols):
+			data.grid[i][col] = True
+	for base in range((baseTerrain-1), -1, -1):
+		row = numRows -1 - base
+		for col in range(len(data.grid[0])):
+			data.grid[row][col] = True
+
+			
+
 # # def createUpBlock()
 
 # # def createDownBlock()

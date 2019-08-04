@@ -3,6 +3,7 @@ from tkinter import *
 from other import *
 from procedural_generation import *
 from classes import *
+import copy
 
 def createNextBlocks(data):
     listt = []
@@ -10,20 +11,33 @@ def createNextBlocks(data):
         listt.append(legalLeftRightBlock(data))
     return listt
 
+def drawGrid(data, num, grid, canvas):
+    for i in range(len(grid)):
+    	for j in range(len(grid[0])):
+            cx = ((j * data.cellWidth) + data.cellWidth//2) + (data.width*num) - data.scrollX
+            cy = (i * data.cellHeight) + data.cellHeight//2
+            if grid[i][j] == True:
+                canvas.create_image(cx, cy, image=data.grassBlock)
 def init(data):
-    # load data.xyz as appropriate
+    #data stuff for procedural generation
     data.rows = 24
     data.cols = 32
     data.emptyGrid = [[False]*data.cols for i in range(data.rows)]
-    data.grid = legalLeftRightBlock(data)
+    data.grid = copy.deepcopy(data.emptyGrid)
+    createStartGrid(data)
     data.previousCols = []
     data.nextCols = []
     data.nextBlocks = createNextBlocks(data)
-    data.cellWidth = data.width // data.cols
-    data.cellHeight = data.height // data.rows
-    data.player = Player(data.cellWidth, data.cellHeight*2, data.cellHeight, data.cols)
+    data.cellWidth = int(data.width / data.cols)
+    data.cellHeight = int(data.height /data.rows)
+    #scroll data
+    data.scrollMarginLeft = 30
+    data.scrollMarginRight = data.width//2 + 60
+    data.scrollX = 0
+    data.player = Player(data.cellWidth, data.cellHeight*2, data.cellHeight, data.rows, data)
     data.playerImage = createPlayer(data,data.player.width, data.player.height)
-    data.grassBlock = createGrassBlock(data)
+    data.grassBlock = createGrassBlock(data, data.cellWidth, data.cellHeight)
+    data.falling = True
 
 def mousePressed(event, data):
     # use event.x and event.y
@@ -32,26 +46,30 @@ def mousePressed(event, data):
 def keyPressed(event, data):
     # use event.char and event.keysym
     if event.keysym == "Right":
-        moveGridRight(data)
-    if event.keysym == "Left":
-        moveGridLeft(data)
-def timerFired(data):
-    pass
+        data.player.moveHorizontal(10, data.cellHeight, data.cellWidth, data.grid, data)
 
+    if event.keysym == "Left":
+        data.player.moveHorizontal(-10, data.cellHeight, data.cellWidth, data.grid, data)
+    if event.keysym == "Up":    
+        data.player.jump(10, data)
+        data.falling = False
+
+
+def timerFired(data):
+    # if data.falling:
+    #     data.player.falling(data)
+    pass
 def redrawAll(canvas, data):
     # draw in canvas
-    for i in range(len(data.grid)):
-    	for j in range(len(data.grid[0])):
-            x0 = j * data.cellWidth
-            x1 = x0 + data.cellWidth
-            y0 = i * data.cellHeight
-            y1 = y0 + data.cellHeight
-            if data.grid[i][j] == True:
-                canvas.create_image(x0, y0, image=data.grassBlock)
-    canvas.create_image(data.player.x0, data.player.y0, image=data.playerImage)
+    drawGrid(data, 0, data.grid, canvas)
+    drawGrid(data, 1, data.nextBlocks[0], canvas)
+    cx = (data.player.x0 + data.player.x1) / 2
+    cy = (data.player.y0 + data.player.y1) / 2
+    canvas.create_image(cx, cy, image=data.playerImage)
+
 
 #this is not my orginal code
-def run(width=300, height=300):
+def run(width, height):
     def redrawAllWrapper(canvas, data):
         canvas.delete(ALL)
         canvas.create_rectangle(0, 0, data.width, data.height,
@@ -77,7 +95,7 @@ def run(width=300, height=300):
     data = Struct()
     data.width = width
     data.height = height
-    data.timerDelay = 100 # milliseconds
+    data.timerDelay = 100 # milliseconds/10
     root = Tk()
     init(data)
     # create the root and the canvas
@@ -97,4 +115,4 @@ def run(width=300, height=300):
 
 
 
-run(800,600)
+run(768,576)

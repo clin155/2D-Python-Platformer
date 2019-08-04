@@ -2,9 +2,9 @@
 from PIL import Image
 import tkinter as tk
 from PIL import ImageTk
-def createGrassBlock(data):
+def createGrassBlock(data, width,height):
 	grassBlock = Image.open("grassBlock.png")
-	grassBlock = grassBlock.resize((data.cellWidth, data.cellHeight), Image.ANTIALIAS)
+	grassBlock = grassBlock.resize((width,height), Image.ANTIALIAS)
 	return ImageTk.PhotoImage(grassBlock)
 
 def createPlayer(data,width,height):
