@@ -5,66 +5,75 @@ from procedural_generation import *
 from classes import *
 import copy
 
-def createNextBlocks(data):
-    listt = []
-    for i in range(2):
-        listt.append(legalLeftRightBlock(data))
-    return listt
 
-def drawGrid(data, num, grid, canvas):
-    for i in range(len(grid)):
-    	for j in range(len(grid[0])):
-            cx = ((j * data.cellWidth) + data.cellWidth//2) + (data.width*num) - data.scrollX
-            cy = (i * data.cellHeight) + data.cellHeight//2
+def drawGrid(data, grid, canvas):
+    for i in range(data.rows):
+    	for j in range(data.firstVisibleCol,data.visibleCols+data.firstVisibleCol):
             if grid[i][j] == True:
+                j = j - data.firstVisibleCol
+                cx = ((j * data.cellWidth) + data.cellWidth//2)
+                cy = (i * data.cellHeight) + data.cellHeight//2
                 canvas.create_image(cx, cy, image=data.grassBlock)
+
 def init(data):
     #data stuff for procedural generation
     data.rows = 24
-    data.cols = 32
-    data.emptyGrid = [[False]*data.cols for i in range(data.rows)]
-    data.grid = copy.deepcopy(data.emptyGrid)
-    createStartGrid(data)
-    data.previousCols = []
-    data.nextCols = []
-    data.nextBlocks = createNextBlocks(data)
-    data.cellWidth = int(data.width / data.cols)
+    data.visibleCols = 32
+    data.emptyBlock = [[False]*data.visibleCols for i in range(data.rows)]
+    data.grid = copy.deepcopy(data.emptyBlock)
+    createStartBlock(data)
+    for i in range(5):
+        addBlocktoGrid(data)
+    # data.previousCols = []
+    # data.nextCols = []
+    # data.nextBlocks = createNextBlocks(data)
+    data.cellWidth = int(data.width / data.visibleCols)
     data.cellHeight = int(data.height /data.rows)
     #scroll data
     data.scrollMarginLeft = 30
     data.scrollMarginRight = data.width//2 + 60
-    data.scrollX = 0
-    data.player = Player(data.cellWidth, data.cellHeight*2, data.cellHeight, data.rows, data)
+    data.player = Player(data.cellWidth, data.cellHeight,data)
     data.playerImage = createPlayer(data,data.player.width, data.player.height)
     data.grassBlock = createGrassBlock(data, data.cellWidth, data.cellHeight)
-    data.falling = True
+    data.firstVisibleCol = 0
+    data.gameOver = True
 
 def mousePressed(event, data):
     # use event.x and event.y
     pass
-
 def keyPressed(event, data):
     # use event.char and event.keysym
     if event.keysym == "Right":
-        data.player.moveHorizontal(10, data.cellHeight, data.cellWidth, data.grid, data)
-
+        data.player.moveHorizontal(1, data.grid, data)
     if event.keysym == "Left":
-        data.player.moveHorizontal(-10, data.cellHeight, data.cellWidth, data.grid, data)
-    if event.keysym == "Up":    
-        data.player.jump(10, data)
-        data.falling = False
-
+        data.player.moveHorizontal(-1, data.grid, data)
+    if event.keysym == "space" and data.player.jumping == False and data.player.inDescent == False: 
+        data.player.startJump()
+    if event.keysym == "r":
+        init(data)
+    if len(data.grid[0]) - data.firstVisibleCol <= data.visibleCols: 
+        popFirstBlock(data)
+        addBlocktoGrid(data)
+    #prevents phasing into a block if user spams right or left
+    while data.player.checkForCollison(data.grid, data.firstVisibleCol):
+        if event.keysym == "Right":
+            data.player.col -= 1
+        if event.keysym == "Left":
+            data.player.col += 1
+            
 
 def timerFired(data):
-    # if data.falling:
-    #     data.player.falling(data)
-    pass
+    # print(data.player.faling, data.player.jumping)
+    if data.player.falling:
+        data.player.fall(data)
+    if data.player.jumping:
+        data.player.jump(data)
 def redrawAll(canvas, data):
     # draw in canvas
-    drawGrid(data, 0, data.grid, canvas)
-    drawGrid(data, 1, data.nextBlocks[0], canvas)
-    cx = (data.player.x0 + data.player.x1) / 2
-    cy = (data.player.y0 + data.player.y1) / 2
+    drawGrid(data, data.grid, canvas)
+    x0, y0, x1,y1 = data.player.getBounds()
+    cx = (x0 +x1) / 2
+    cy = (y0+y1) / 2
     canvas.create_image(cx, cy, image=data.playerImage)
 
 

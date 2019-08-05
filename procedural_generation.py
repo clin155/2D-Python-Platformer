@@ -1,9 +1,9 @@
 import random
 import copy
 def createLeftRightBlock(data):
-	grid = copy.deepcopy(data.emptyGrid)
-	numRows = len(grid)
-	numCols = len(grid[0])
+	grid = copy.deepcopy(data.emptyBlock)
+	numRows = data.rows
+	numCols = data.visibleCols
 	#create top terrain
 	baseTerrain = 2
 	for i in range(baseTerrain):
@@ -24,7 +24,7 @@ def createLeftRightBlock(data):
 	#creates base terrain for the bottom
 	for base in range((baseTerrain-1), -1, -1):
 		row = numRows -1 - base
-		for col in range(len(grid[0])):
+		for col in range(numCols):
 			if grid[numRows-1-baseTerrain][col] == True:
 				grid[row][col] = True
 
@@ -34,22 +34,21 @@ def legalLeftRightBlock(data):
 	block = None 
 	while block == None or not isLegal(block, data):
 		block = createLeftRightBlock(data)
+	print("Legal!")
 	return block
 def isLegal(block, data):
 	for row in range(data.rows//2, data.rows):
-		for col in range(data.cols):
+		for col in range(data.visibleCols):
 			if col != 0:
 				if checkForImpossibleJumps(block, data, row, col) != True:
-					print('Bad')
 					return False
 
 	if isLegalHoles(block, data) and hasHoles(block, data):
 		return True
-	print('Also bad')
 	return False
 
 def hasHoles(block, data):
-	for col in range(data.cols):
+	for col in range(data.visibleCols):
 		if block[data.rows-1][col] == False:
 			return True
 
@@ -74,12 +73,11 @@ def checkJump(block, data, row, col, parm,dCol):
 	return checkJump(block, data, row, col, parm-1,dCol+1)
 	
 
-
 def getListofHoles(block, data):
 	inHole = False
 	listOFHoles = []
 	startPt = None
-	for col in range(data.cols):
+	for col in range(data.visibleCols):
 		if block[data.rows-1][col] == True and inHole == False:
 			continue
 		elif inHole == False:
@@ -108,16 +106,16 @@ def getSurfaceBlock(block, data, col):
 		if block[row][col] == True:
 			return (row, col)
 
-def createStartGrid(data):
-	numRows = len(data.grid)
-	numCols = len(data.grid[0])
+def createStartBlock(data):
+	numRows = data.rows
+	numCols = data.visibleCols
 	baseTerrain = 2
 	for i in range(baseTerrain):
 		for col in range(numCols):
 			data.grid[i][col] = True
 	for base in range((baseTerrain-1), -1, -1):
 		row = numRows -1 - base
-		for col in range(len(data.grid[0])):
+		for col in range(numCols):
 			data.grid[row][col] = True
 
 			
