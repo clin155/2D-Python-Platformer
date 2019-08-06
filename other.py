@@ -2,89 +2,114 @@ from procedural_generation import *
 import copy
 
 
-
 def popFirstBlock(data):
-    newGrid = []
-    for row in data.grid:
-        newGrid.append(row[data.visibleCols:])
+	newGrid = []
+	for row in data.grid:
+		newGrid.append(row[data.visibleCols:])
+	data.grid = copy.deepcopy(newGrid)
+	data.firstVisibleCol -= data.visibleCols
+def addBlocktoGrid(data, blockType = None, start=False):
+	#0 is right 1 is up 2 is down 3 is left
+	if blockType == None:
+		blockType = 1
+		# blockType = random.randint(0,1)
+	if start == False:
+		if blockType == 1 or blockType == 2: 
+			print("AddedUp")
+			data.player.inUpDownBlock = True
+			# data.player.col = data.visibleCols//2
+			# data.player.row = len(data.grid) - data.visibleRows//2
+
+		else:
+			data.player.inUpDownBlock = False
+	returnBlock(blockType, data)
+
+def shiftGridDown(data, blockLen, emptyRow):
+	for i in range(blockLen):
+		data.grid = [copy.copy(emptyRow)] + copy.deepcopy(data.grid[:])
+
+def createStartBlock(data):
+	numRows = data.visibleRows
+	numCols = data.visibleCols
+	baseTerrain = 2
+	for col in range(numCols):
+		data.grid[0][col] = "gravel"
+		data.grid[1][col] = True
+		data.grid[numRows-1][col] = "gravel"
+		data.grid[numRows-baseTerrain][col] = True
 
 
-def addBlocktoGrid(data):
-    block = legalLeftRightBlock(data)
-    for row in range(len(block)):
-        data.grid[row] += block[row]
+def getStartCell(data, col):
+	for row in range(data.firstVisibleRow + data.visibleRows//2,\
+		data.firstVisibleRow+data.visibleRows):
+		if data.grid[row][col] == True:
+			return (row, col)
+	return(12, 12)
+
+def createEmptyRow(leng):
+	listt = []
+	for i in range(leng):
+		listt.append(False)
+	return listt
 
 
-# def moveGridRight(data):
-#     colFromGrid, newGrid = shiftGridLeft(data, data.grid)
-#     data.previousCols.append(colFromGrid)   
-#     data.grid = copy.deepcopy(newGrid)
-#     colFrom1, newBlock1 = shiftGridLeft(data, data.nextBlocks[0])
-#     colFrom2, newBlock2 = shiftGridLeft(data, data.nextBlocks[1])
-#     data.nextBlocks[0] = copy.deepcopy(newBlock1)
-#     data.nextBlocks[1] = copy.deepcopy(newBlock2)
-#     if data.nextCols != []:
-#         col3 = data.nextCols.pop(0)
-#         addtoEndOfBlock(data.nextBlocks[1, col3], data)
-#     addtoEndOfBlock(data.nextBlocks[0], colFrom2, data)
-#     for row in range(data.rows):
-#         data.grid[row][data.cols-1] = colFrom1[row]
-#     if checkIfBlockNeeded(data):
-#         data.nextBlocks[1] = legalLeftRightBlock(data)
-
-# def addtoEndOfBlock(block, cols,data):
-#     for col in range(data.cols):
-#         #look for a col of all zeros
-#         if block[0][col] == 0:
-#             for row in range(data.rows):
-#                 block[row][col] = cols[row]
-
-# def checkIfBlockNeeded(data):
-#     for col in range(len(data.nextBlocks[1][0])):
-#         if data.nextBlocks[1][0][col] != 0:
-#             return False
-#     return True
-# def shiftGridLeft(data, block):
-#     col = []
-#     newGrid = []
-#     for row in range(data.rows):
-#         col.append(block[row][0])
-#         newGrid.append(block[row][1:]+[0])
-#     return col, newGrid
-
-# def shiftGridRight(data, block):
-#     col = []
-#     newGrid = []
-#     for row in range(data.rows):
-#         if type(block[row][len(block[0])-1]) == bool:
-#             col.append(block[row][len(block[0])-1])
-#         newGrid.append([0]+block[row][:-1])
-#     return col, newGrid
-
-# def moveGridLeft(data):
-#     if len(data.previousCols) == data.cols or len(data.previousCols) == 0:
-#         return None
-#     colFromPrev = data.previousCols.pop(0)
-#     colFromGrid, newDataGrid = shiftGridRight(data, data.grid)
-#     colFromBlock1, newNextBlock1 = shiftGridRight(data, data.nextBlocks[0])
-#     colFromBlock2, newNextBlock2 = shiftGridRight(data, data.nextBlocks[1])
-#     data.nextBlocks[0] = copy.deepcopy(newNextBlock1)
-#     data.nextBlocks[1] = copy.deepcopy(newNextBlock2)
-#     data.grid = copy.deepcopy(newDataGrid)
-#     #inserts col into front of data.nextBlock
-#     addtoStartOfBlock(data, colFromPrev, data.grid)
-#     addtoStartOfBlock(data, colFromGrid, data.nextBlocks[0])
-#     addtoStartOfBlock(data, colFromBlock1, data.nextBlocks[1])
-#     if checkifNotEmptyCol(colFromBlock2):
-#         data.nextCols.append(colFromBlock2)
+def addUpBlock(data, block, typee):
+	if typee == "Upleft":
+		addceilingLadder(data, block)
+	emptyRow = createEmptyRow(len(data.grid[0]))
+	shiftGridDown(data, len(block), emptyRow)
+	for row in range(len(block)):
+		for col in range(len(block[0])):
+			data.grid[row][col+data.firstVisibleCol] = block[row][col]
+	data.player.row += len(block)
+	data.player.resetY0()
+	data.firstVisibleRow += len(block)
+	data.player.jumping = False
 
 
-# def addtoStartOfBlock(data, col, block):
-#     for row in range(data.rows):
-#         block[row][0] = col[row] 
-# def checkifNotEmptyCol(col):
-#     for value in col:
-#         if value != 0:
-#             return True
-#     return False
+def addceilingLadder(data, block):
+	print("cock")
+	for row in range(0, len(block)//2):
+		for col in range(len(block[0])-6, len(block[0])):
+			try:
+				data.grid[row][col+data.firstVisibleCol] = False
+			except:
+				pass
 
+	for row in range(0, len(block)):
+			data.grid[row][len(data.grid[0])-1] = True
+			if data.grid[row][len(data.grid[0])-4] == False:
+				data.grid[row][len(data.grid[0])-4] = "ladder"
+
+def returnBlock(blockType, data):
+	if blockType == 0:
+		block = createLeftRightBlock(data)
+		for row in range(len(block)):
+			data.grid[row] += block[row]
+	elif blockType == 1:
+		block = createUpLeftBlock(data)
+		addUpBlock(data,block, "Upleft")
+		print("done!")
+		block = createUpRightBlock(data)
+		addUpBlock(data,block, "UpRight")
+		print("done!")
+
+
+
+def getVerticalScrollBounds(data):
+	row = data.firstVisibleRow
+	checking = True
+	while checking:
+		row += 1
+		for col in range(len(data.grid[0])-data.visibleCols, len(data.grid[0])):
+			if data.grid[row][col] == "gravel":
+				checking = False
+	upperBound = row
+	row = data.firstVisibleRow - 1
+	checking = True
+	while checking:
+		row -= 1
+		if data.grid[row][len(data.grid[0])-10] == "gravel":
+			checking = False
+	lowerBound = row
+	return lowerBound, upperBound
