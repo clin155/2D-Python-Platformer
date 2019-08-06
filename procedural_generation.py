@@ -37,6 +37,7 @@ def legalBlock(data):
 	while block == None or not isLegal(block, data):
 		block = createBlock(data)
 	print("Legal!")
+	addObsAndPowerUps(block)
 	return block
 def isLegal(block, data):
 	for row in range(data.visibleRows//2, data.visibleRows):
@@ -59,7 +60,7 @@ def checkForImpossibleJumps(block, data, row, col):
 		return True
 	if block[data.visibleRows-1][col] != True:
 		return True
-	if checkJump(block, data, row, col, 5, 1):
+	if checkJump(block, data, row, col, data.player.maxJumpHeight, 1):
 		return True
 	return False
 
@@ -153,7 +154,20 @@ def createUpRightBlock(data):
 	return block
 
 
+def getListofSurfaceBocks(block):
+	tupSet = set()
+	for col in range(len(block[0])):
+		for row in range(len(block)//2, len(block)):
+			if block[row][col] == True:
+				tupSet.add((row,col))
+				break
+	return tupSet
 
 
 
-# # def createDownBlock()
+def addObsAndPowerUps(block):
+	tupSet = getListofSurfaceBocks(block)
+	numPowerUps = random.randint(0,2)
+	for i in range(numPowerUps):
+		coord = random.choice(tuple(tupSet))
+		block[coord[0]-1][coord[1]] = "jumpPower"

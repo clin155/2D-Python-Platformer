@@ -1,7 +1,7 @@
 from procedural_generation import *
 from non_original_work import *
 from other import *
-
+import math
 class Player:
     def __init__(self, w, h, data):
         self.width = w
@@ -25,6 +25,9 @@ class Player:
         self.lowerBound = None
         self.upperBound = None
         self.inBounds = False
+        self.maxJump = 3
+        self.hasPowerUp = None
+        self.inUpLeft = False
 
 
 
@@ -35,8 +38,8 @@ class Player:
         self.col += dx
         if self.checkForCollison(grid, data.firstVisibleCol, data):
                 self.col -= dx
-        if self.inUpDownBlock != True:
-            self.scrollHorizontal(dx, data)
+        if self.inUpDownBlock != True and self.inUpLeft != True:
+            return self.scrollHorizontal(dx, data)
     
     def getBounds(self):
         x0 = self.col*self.width
@@ -45,19 +48,23 @@ class Player:
 
     def checkForCollison(self, grid, col, data):
        # print(self.col, self.row)
-        if grid[self.row][self.col + col] == True or grid[self.row][self.col + col] == "gravel":
-            return True
-        elif grid[self.row][self.col + col] == "ladder":
-            self.falling = False
-            self.climbing = True
-        elif self.jumping == False:
-            self.falling = True
-            self.climbing = False
-        if  grid[self.row][self.col + col] != "ladder" and self.climbing:
-            self.climbing = False
-
-        return False
-
+        try:
+            if grid[self.row][self.col + col] == True or grid[self.row][self.col + col] == "gravel":
+                return True
+            elif grid[self.row][self.col + col] == "ladder":
+                self.falling = False
+                self.climbing = True
+            #prevents player from escaping the ladder upwards
+            elif self.jumping == False:
+                self.falling = True
+                self.climbing = False
+            if grid[self.row][self.col + col] == "jumpPower":
+                grid[self.row][self.col+col] = False
+                self.hasPowerUp = "jump"
+                self.maxJump += 1
+            return False
+        except IndexError:
+            data.gameOver = True
     def getRow(self):
         row = divide_round_up(self.y0,self.height)
         self.row = row
@@ -66,22 +73,15 @@ class Player:
         if self.col < self.minCol and data.firstVisibleCol > 0:
             self.col -= dx
             data.firstVisibleCol -= 1
+            return True
         elif self.col < self.minCol:
             self.col -= dx
         elif self.col > self.maxCol:
             self.col -= dx
-            data.firstVisibleCol += 2
+            data.firstVisibleCol += 1
+            return True
+        return False
     
-    # def scrollVertical(self, dy, data):
-    #     if self.col < self.minCol and data.firstVisibleCol > 0:
-    #         self.col -= dx
-    #         data.firstVisibleCol -= 1
-    #     elif self.col < self.minCol:
-    #         self.col -= dx
-    #     elif self.col > self.maxCol:
-    #         self.col -= dx
-    #         data.firstVisibleCol += 2
-
     def moveVertical(self,data, dy):
         self.y0 += dy
         self.getRow()
@@ -96,31 +96,25 @@ class Player:
     
     def moveUpDownRow(self, data, dy):
         self.row += dy
-
-        self.scrollVertical(dy, data)
+        if self.climbing:
+            self.scrollVertical(dy, data)
 
     def scrollVertical(self, dy, data):
-        if self.inBounds == False:
-            print("yeet")
-            self.lowerBound, self.upperBound = getVerticalScrollBounds(data)
-            self.inBounds = True
         data.firstVisibleRow += dy
-        if data.firstVisibleRow < self.lowerBound or data.firstVisibleRow >= self.upperBound:
+        if data.firstVisibleRow < self.lowerBound:
             data.firstVisibleRow -= dy
-            print("fuck")
+            print("fuck", data.firstVisibleRow, self.lowerBound)
             if data.firstVisibleRow % 23 == 0:
                 self.climbing = False
                 self.falling = False
         self.row += dy
         self.resetY0()
-        # if data.grid[self.row][self.col+data.firstVisibleCol] == "ladder":
-        #     data.firstVisibleRow += dy*2
 
 
     def getMaxJumpRow(self, grid,data):
         if self.startRow == None:
             self.startRow = 1000
-        return self.startRow - 3
+        return self.startRow - self.maxJump
 
     def startJump(self):
         self.startRow = self.row
@@ -139,42 +133,40 @@ class Player:
         if self.jumping == False:
             self.moveVertical(data, self.fallSpd)
 
+    def checkForGravel(self, data):
+        for i in range(4):
+            if not self.climbing:
+                try:
+                    if data.grid[self.row][self.col + i] == "gravel":
+                        return True
+                    elif data.grid[self.row][self.col - i] == "gravel":
+                        return True
+                except IndexError:
+                    continue
+    def canvasGetBounds(self, data):
+        x0, y0, x1,y1 = self.getBounds()
+        y0 = y0 - (data.firstVisibleRow * data.cellHeight)
+        y1 = y0 + self.height 
+        return x0, y0, x1, y1
 
-    #     if self.y0 >= self.jumpStartY - self.jumpHeight:
-    #         self.y1 -= dy
-    #         self.y0 -= dy     
+    def getCanvasCenter(self,data):
+        x0, y0, x1,y1 = self.canvasGetBounds(data)
+        cx = (x0+x1)/2
+        cy = (y0+y1)/2
+        return cx, cy
+
+    def reversePowerUp(self):
+        if self.hasPowerUp == "jump":
+            self.maxJump -= 1
 
 
-    # def falling(self, data):
-    #     self.y1 += self.fallSpd
-    #     self.y0 += self.fallSpd
-    #     playerCells = self.getCellAll(data.cellHeight, data.cellWidth)
-    #     for tup in playerCells:
-    #         if data.grid[tup[0]][tup[1]] == True:
-    #             self.x0 -= self.fallSpd
-    #             self.x1 -= self.fallSpd
-    #             break
-            
-    # def getCellAll(self, cellHeight, cellWidth):
-    #     tup = self.getCellX0Y0(cellHeight, cellWidth, self.x0+self.scrollX, self.y0)
-    #     # if inCell == 0:
-    #     return [tup, (tup[0]+1, tup[1])]
-    #     # elif inCell == 1:
-    #     #     return  [tup, (tup[0]+1, tup[1]), (tup[0], tup[1]+1), (tup[0]+1, tup[1]+1)]
-    #     # else:
-    #     #     return [tup,(tup[0]+1, tup(1)), (tup[0], tup[1]+1), (tup[0]+1, tup[1]+1), (tup[0]+2, tup[1]), (tup[0]+2, tup[1]+1)]
+    def isOnLand(self, data):
+        try:
+            if data.grid[self.row+1][self.col+data.firstVisibleCol] == True:
+                return True
 
-    # # def getCellX0Y0(self, cellHeight, cellWidth, x, y):
-    # #     col = x//cellWidth
-    # #     row = y//cellHeight
-    # #     if x % cellWidth == 0 and y % cellHeight == 0:
-    # #         return (row, col), 0
-    # #     elif y % cellHeight == 0 and x % cellWidth != 0:
-    # #         return (row, col), 1
-    # #     return (row, col), 2
+        except IndexError:
+            data.gameOver = True
+        return False
 
-    # def getCellX0Y0(self, cellHeight, cellWidth, x, y):
-    #     col = x//cellWidth
-    #     row = y//cellHeight
-    #     print(col)
-    #     return (row, col)
+

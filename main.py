@@ -3,31 +3,10 @@ from tkinter import *
 from other import *
 from procedural_generation import *
 from classes import *
+from enemies import *
 import copy
 
 
-
-def drawImage(img, data, i, j, canvas):
-    j = j - data.firstVisibleCol
-    i = i - data.firstVisibleRow
-    cx = ((j * data.cellWidth) + data.cellWidth//2)
-    cy = (i * data.cellHeight) + data.cellHeight//2
-    canvas.create_image(cx, cy, image=img)
-
-def drawGrid(data, grid, canvas):
-    for i in range(data.firstVisibleRow,data.visibleRows+data.firstVisibleRow):
-        for j in range(data.firstVisibleCol,data.visibleCols+data.firstVisibleCol):
-            if i < 0 or j < 0: continue
-            elif i >= len(grid) or j >= len(grid[0]): continue
-            try:
-                if grid[i][j] == True:
-                    drawImage(data.grassBlock, data, i, j, canvas)
-                elif grid[i][j] == "ladder":
-                    drawImage(data.ladder, data, i, j, canvas)
-                elif grid[i][j] == "gravel":
-                    drawImage(data.gravel, data, i, j, canvas)
-            except IndexError:
-                pass    
 
 def init(data):
     #data stuff for procedural generation
@@ -38,7 +17,6 @@ def init(data):
     data.emptyBlock = [[False]*data.visibleCols for i in range(data.visibleRows)]
     data.grid = copy.deepcopy(data.emptyBlock)
     createStartBlock(data)
-    #2
     for i in range(2):
         addBlocktoGrid(data, 0, True)
     # data.previousCols = []
@@ -51,11 +29,19 @@ def init(data):
     data.scrollMarginRight = data.width//2 + 60
     data.player = Player(data.cellWidth, data.cellHeight,data)
     #load Images
-    data.playerImage = createPlayer(data,data.player.width, data.player.height)
-    data.grassBlock = createGrassBlock(data, data.cellWidth, data.cellHeight)
-    data.ladder = createLadder(data, data.cellWidth, data.cellHeight)
-    data.gravel = createGravel(data, data.cellWidth, data.cellHeight)
+    data.playerImage = createImage(data,data.player.width, data.player.height, "player.png")
+    data.grassBlock = createImage(data, data.cellWidth, data.cellHeight, "grassBlock.png")
+    data.gravel = createImage(data, data.cellWidth, data.cellHeight, "gravel.jpg")
+    data.ladder = createImage(data, data.cellWidth, data.cellHeight, "ladder.png")
+    data.ghost = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "ghost.png")
+    data.jumpPower = createImage(data, data.cellWidth, data.cellHeight, "jumpPower.png")
     data.gameOver = False
+    data.ghosts = []
+    data.numGhosts = 3
+    createNewGhosts(data)
+    data.timeElapsed = 0
+    data.level = 0
+    data.powerUpTime = 0
 
  
 def mousePressed(event, data):
@@ -65,9 +51,11 @@ def keyPressed(event, data):
     # use event.char and event.keysym
     if not data.gameOver:
         if event.keysym == "Right" and not data.player.climbing:
-            data.player.moveHorizontal(1, data.grid, data)
+            if data.player.moveHorizontal(1, data.grid, data):
+                moveEnemies(-2, 0,data)
         if event.keysym == "Left" and not data.player.climbing:
-            data.player.moveHorizontal(-1, data.grid, data)
+            if data.player.moveHorizontal(-1, data.grid, data):
+                moveEnemies(2,0,data)
         if event.keysym == "space":
             if data.player.jumping == False and data.player.inDescent == False: 
                 data.player.startJump()
@@ -75,8 +63,9 @@ def keyPressed(event, data):
                 data.player.startJump()
         if event.keysym == "Up" and data.player.climbing:
             data.player.moveUpDownRow(data, -1)
-        # if event.keysym == "Down":
-        #     data.player.moveUpDownRow(data, 1)
+            moveEnemies(0,1,data)
+        if event.keysym == "Down":
+            data.player.moveUpDownRow(data, 1)
         if event.keysym == "j":
             data.firstVisibleCol -= 1
         if event.keysym == "i":
@@ -95,33 +84,65 @@ def keyPressed(event, data):
         init(data)
 
 def timerFired(data):
-    if data.player.row >= data.firstVisibleRow + data.visibleRows-1:
+    data.timeElapsed += 1
+    if data.player.row >= data.firstVisibleRow + data.visibleRows-1: data.gameOver = True
+    try:
+        if data.player.checkForGravel(data): data.gameOver = True
+    except IndexError:
         data.gameOver = True
     if not data.gameOver:
+        if data.player.isOnLand(data) and not data.player.jumping: data.player.falling = True
         if data.player.falling:
             data.player.fall(data)
         if data.player.jumping:
             data.player.jump(data)
         if data.player.inUpDownBlock == True:
-            if data.firstVisibleRow < data.visibleRows:
+            if data.firstVisibleRow <= data.visibleRows and not data.player.climbing and data.player.isOnLand(data):
+                data.player.lowerBound = getVerticalScrollBounds(data)
                 data.player.inUpDownBlock = False
-    #removes extrablocks
-    if len(data.grid) >= 2*data.visibleRows:
-        data.grid = data.grid[:len(data.grid)]
-    if len(data.grid[0]) - data.firstVisibleCol <= data.visibleCols and data.player.inUpDownBlock == False: 
-                popFirstBlock(data)
-                addBlocktoGrid(data)
-                data.player.lowerBound, data.player.upperBound =getVerticalScrollBounds(data)
+            elif data.firstVisibleRow <= data.visibleRows*2 and not data.player.climbing and data.player.isOnLand(data):
+                data.player.lowerBound = getVerticalScrollBounds(data)
+
+        if data.player.inUpLeft == True:
+            if data.player.row < data.visibleRows -4:
+                data.player.inUpLeft = False
+                data.player.inUpDownBlock = False
+
+        #enemies
+        for ghost in data.ghosts:
+            ghost.move(data.player, data)
+        removeGhosts(data)
+        # #spawns the enemies ##################
+        # if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0:
+        #     createNewGhosts(data)
+        # ##################
+        if data.player.hasPowerUp != None:
+            data.powerUpTime += 1
+            if data.powerUpTime % 100 == 0:
+                data.powerUpTime = 0
+                data.player.reversePowerUp()
+                data.player.hasPowerUp = None 
+        #removes extrablocks
+        if len(data.grid) >= 2*data.visibleRows:
+            data.grid = data.grid[:len(data.grid)]
+        if len(data.grid[0]) - data.firstVisibleCol <= data.visibleCols and data.player.inUpDownBlock == False:
+            data.player.inUpDownBlock = True
+            popFirstBlock(data)
+            addBlocktoGrid(data)
+            data.player.lowerBound = getVerticalScrollBounds(data)
+        
 
 def redrawAll(canvas, data):
     # draw in canvas
-    drawGrid(data, data.grid, canvas)
-    x0, y0, x1,y1 = data.player.getBounds()
-    y0 = y0 - (data.firstVisibleRow * data.cellHeight)
-    y1 = y0 + data.player.height 
-    cx = (x0 +x1) / 2
-    cy = (y0+y1) / 2
-    canvas.create_image(cx, cy, image=data.playerImage)
+    if not data.gameOver:
+        drawGrid(data, data.grid, canvas)
+        drawPowerUp(data, canvas)
+        drawPlayer(data, data.player, canvas)
+        for ghost in data.ghosts:
+            ghost.draw(canvas,data.ghost)
+
+    else:
+        drawGameOver(data,canvas)
 
 
 #this is not my orginal code
