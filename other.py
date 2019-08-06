@@ -1,8 +1,11 @@
+
+    
 from procedural_generation import *
 import copy
 
 
 def popFirstBlock(data):
+	if len(data.grid[0]) <= data.visibleCols: return None
 	newGrid = []
 	for row in data.grid:
 		newGrid.append(row[data.visibleCols:])
@@ -60,7 +63,7 @@ def addUpBlock(data, block, typee):
 	shiftGridDown(data, len(block), emptyRow)
 	for row in range(len(block)):
 		for col in range(len(block[0])):
-			data.grid[row][col+data.firstVisibleCol] = block[row][col]
+			data.grid[row][len(data.grid[0])-data.visibleCols + col] = block[row][col]
 	data.player.row += len(block)
 	data.player.resetY0()
 	data.firstVisibleRow += len(block)
@@ -72,7 +75,7 @@ def addceilingLadder(data, block):
 	for row in range(0, len(block)//2):
 		for col in range(len(block[0])-6, len(block[0])):
 			try:
-				data.grid[row][col+data.firstVisibleCol] = False
+				data.grid[row][len(data.grid[0])-data.visibleCols + col] = False
 			except:
 				pass
 

@@ -16,7 +16,7 @@ def drawImage(img, data, i, j, canvas):
 
 def drawGrid(data, grid, canvas):
     for i in range(data.firstVisibleRow,data.visibleRows+data.firstVisibleRow):
-    	for j in range(data.firstVisibleCol,data.visibleCols+data.firstVisibleCol):
+        for j in range(data.firstVisibleCol,data.visibleCols+data.firstVisibleCol):
             if i < 0 or j < 0: continue
             elif i >= len(grid) or j >= len(grid[0]): continue
             try:
