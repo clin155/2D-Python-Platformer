@@ -1,5 +1,6 @@
 import random
 import copy
+from enemies import * 
 def createBlock(data):
 	grid = copy.deepcopy(data.emptyBlock)
 	numRows = data.visibleRows
@@ -37,7 +38,7 @@ def legalBlock(data):
 	while block == None or not isLegal(block, data):
 		block = createBlock(data)
 	print("Legal!")
-	addObsAndPowerUps(block)
+	addObsAndPowerUps(block,data)
 	return block
 def isLegal(block, data):
 	for row in range(data.visibleRows//2, data.visibleRows):
@@ -73,6 +74,7 @@ def checkJump(block, data, row, col, parm,dCol):
 				return True
 		except IndexError:
 			return True
+
 	return checkJump(block, data, row, col, parm-1,dCol+1)
  
 
@@ -109,17 +111,8 @@ def getSurfaceBlock(block, data, col):
 		if block[row][col] == True:
 			return (row, col)
 
-def createStartBlock(data):
-	numRows = data.visibleRows
-	numCols = data.visibleCols
-	baseTerrain = 2
-	for i in range(baseTerrain):
-		for col in range(numCols):
-			data.grid[i][col] = True
-	for base in range((baseTerrain-1), -1, -1):
-		row = numRows -1 - base
-		for col in range(numCols):
-			data.grid[row][col] = True
+
+
 
 
 def createLeftRightBlock(data):
@@ -165,9 +158,17 @@ def getListofSurfaceBocks(block):
 
 
 
-def addObsAndPowerUps(block):
+def addObsAndPowerUps(block,data):
 	tupSet = getListofSurfaceBocks(block)
 	numPowerUps = random.randint(0,2)
+	numObstables = random.randint(1, data.maxNumObstacles)
 	for i in range(numPowerUps):
 		coord = random.choice(tuple(tupSet))
 		block[coord[0]-1][coord[1]] = "jumpPower"
+	
+	for i in range(numObstables):
+		coord = random.choice(tuple(tupSet))
+		block[coord[0]][coord[1]] = "obstacle"
+
+
+
