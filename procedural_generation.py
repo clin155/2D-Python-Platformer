@@ -21,7 +21,7 @@ def createBlock(data):
 		if col == 0 or col == numCols-1:
 			length = 2
 		else:
-			length = random.randint(0,5)
+			length = random.randint(0,4)
 		for i in range(numRows-1, numRows-(length+1), -1):
 			i = i - baseTerrain
 			grid[i][col] = True
@@ -61,7 +61,7 @@ def checkForImpossibleJumps(block, data, row, col):
 		return True
 	if block[data.visibleRows-1][col] != True:
 		return True
-	if checkJump(block, data, row, col, data.player.maxJumpHeight, 1):
+	if checkJump(block, data, row, col, data.player.baseMaxJump, 1):
 		return True
 	return False
 
@@ -121,27 +121,24 @@ def createLeftRightBlock(data):
 def createUpLeftBlock(data):
 	block = legalBlock(data)
 	for row in range(data.visibleRows//2+4,data.visibleRows):
-		for col in range(data.visibleCols-6, data.visibleCols-1):
-			block[row][col] = False
-			if col == data.visibleCols-4:
-				block[row][col] = "ladder"
+		col = data.visibleCols-3
+		block[row][col] = "ladder"
 	for row in range(0, data.visibleRows//2):
-		for col in range(1, 6):
-			block[row][col] = False
+		col = 3
+		block[row][col] = False
 	for row in range(len(block)):
 		block[row][0] = True
 		block[row][data.visibleCols-1] = True
-		if block[row][3] == False:
+		if block[row][3] != True:
+			if block[row][3] != "gravel":
 				block[row][3] = "ladder"
 	return block
 
 def createUpRightBlock(data):
 	block = legalBlock(data)
 	for row in range(data.visibleRows//2+4,data.visibleRows):
-		for col in range(1, 6):
-			block[row][col] = False
-			if col == 3:
-				block[row][col] = "ladder"
+		col = 3
+		block[row][col] = "ladder"
 	for row in range(len(block)):
 		block[row][0] = True
 	return block
@@ -149,7 +146,7 @@ def createUpRightBlock(data):
 
 def getListofSurfaceBocks(block):
 	tupSet = set()
-	for col in range(len(block[0])):
+	for col in range(1,len(block[0])):
 		for row in range(len(block)//2, len(block)):
 			if block[row][col] == True:
 				tupSet.add((row,col))
@@ -164,7 +161,8 @@ def addObsAndPowerUps(block,data):
 	numObstables = random.randint(1, data.maxNumObstacles)
 	for i in range(numPowerUps):
 		coord = random.choice(tuple(tupSet))
-		block[coord[0]-1][coord[1]] = "jumpPower"
+		power = random.choice(["jumpPower", "shield"])
+		block[coord[0]-1][coord[1]] = power
 	
 	for i in range(numObstables):
 		coord = random.choice(tuple(tupSet))

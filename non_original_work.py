@@ -5,9 +5,11 @@
 	#I got the Image fromhttp://pngimg.com/imgs/fantasy/ghost/
 	#I got the enemy image from https://opengameart.org/content/zombie-and-skeleton-32x48
 	#i got background from https://www.brusheezy.com/textures/43311-blue-sky-texture
+from tkinter import *
 from PIL import Image
 import tkinter as tk
 from PIL import ImageTk
+
 def createImage(data, width,height, img):
 	grassBlock = Image.open(img)
 	grassBlock = grassBlock.resize((width,height), Image.ANTIALIAS)

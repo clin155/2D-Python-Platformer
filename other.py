@@ -1,5 +1,3 @@
-
-	
 from procedural_generation import *
 import copy
 
@@ -14,8 +12,8 @@ def popFirstBlock(data):
 def addBlocktoGrid(data, blockType = None, start=False):
 	#0 is right 1 is up
 	if blockType == None:
-		blockType = 1
-		# blockType = random.randint(0,1)
+		#blockType = 1
+		blockType = random.randint(0,1)
 		# blockType = 0
 	if start == False:
 		if blockType == 1: 
@@ -23,9 +21,10 @@ def addBlocktoGrid(data, blockType = None, start=False):
 			data.player.inUpDownBlock = True
 			data.firstVisibleCol = len(data.grid[0])-data.visibleCols
 			data.player.falling = True
-			# data.player.col = data.visibleCols//2
-			# data.player.row = len(data.grid) - data.visibleRows//2
+			# data.player.maxJump = data.player.baseMaxJump
 		if blockType == 0:
+			# data.player.maxJump = data.player.baseMaxJump+1
+
 			if data.player.inUpDownBlock == True:
 				data.player.inUpLeft = True
 			else:
@@ -65,23 +64,22 @@ def addUpBlock(data, block, typee):
 		for col in range(len(block[0])):
 			data.grid[row][len(data.grid[0])-data.visibleCols + col] = block[row][col]
 	data.player.row += len(block)
-	data.player.resetY0()
 	data.firstVisibleRow += len(block)
 	data.player.jumping = False
 
 
 def addceilingLadder(data, block):
 	for row in range(0, len(block)//2):
-		for col in range(len(block[0])-6, len(block[0])):
-			try:
-				data.grid[row][len(data.grid[0])-data.visibleCols + col] = False
-			except:
-				pass
+		try:
+			col = 3
+			data.grid[row][len(data.grid[0]) - col] = False
+		except:
+			pass
 
 	for row in range(0, len(block)):
 			data.grid[row][len(data.grid[0])-1] = True
-			if data.grid[row][len(data.grid[0])-4] == False:
-				data.grid[row][len(data.grid[0])-4] = "ladder"
+			if data.grid[row][len(data.grid[0])-3] == False:
+				data.grid[row][len(data.grid[0])-3] = "ladder"
 
 def returnBlock(blockType, data):
 	if blockType == 0:
@@ -97,7 +95,6 @@ def returnBlock(blockType, data):
 		block = createUpRightBlock(data)
 		addUpBlock(data,block, "UpRight")
 		data.numBlocks += 1
-	print("done!")
 
 
 
@@ -117,8 +114,11 @@ def getVerticalScrollBounds(data):
 	while checking:
 		row += 1
 		for col in range(len(data.grid[0])-data.visibleCols, len(data.grid[0])):	
-			if data.grid[row][col] == "gravel":
-				checking = False	
+			try:
+				if data.grid[row][col] == "gravel":
+					checking = False	
+			except:
+				print(row,col)
 	upperBound = row
 	return lowerBound, upperBound
 
@@ -128,12 +128,25 @@ def drawGameOver(data,canvas):
 	canvas.create_text(data.width//2, data.height//2, text="GAME OVER", font="Arial 75")
 	canvas.create_text(data.width//2, data.height*(3/4), text="Press r to restart", font="Arial 50")
 
+def drawGameOverShift(data,canvas):
+	canvas.create_rectangle(data.shiftAmount, 0, data.width+data.shiftAmount,data.height, fill="light green")
+	canvas.create_text(data.width//2+data.shiftAmount, data.height//2, text="GAME OVER", font="Arial 75")
+	canvas.create_text(data.width//2+data.shiftAmount, data.height*(3/4), text="Press r to restart", font="Arial 50")
+
 def drawImage(img, data, i, j, canvas):
 	j = j - data.firstVisibleCol
 	i = i - data.firstVisibleRow
 	cx = ((j * data.cellWidth) + data.cellWidth//2)
 	cy = (i * data.cellHeight) + data.cellHeight//2
 	canvas.create_image(cx, cy, image=img)
+
+def drawImageShift(img, data, i, j, canvas):
+	j = j - data.firstVisibleCol
+	i = i - data.firstVisibleRow
+	cx = ((j * data.cellWidth) + data.cellWidth//2) + data.shiftAmount
+	cy = (i * data.cellHeight) + data.cellHeight//2
+	canvas.create_image(cx, cy, image=img)
+
 
 def drawGrid(data, grid, canvas):
 	for i in range(data.firstVisibleRow,data.visibleRows+data.firstVisibleRow):
@@ -153,23 +166,61 @@ def drawGrid(data, grid, canvas):
 					drawImage(data.obstacle, data, i, j, canvas)
 				elif grid[i][j] == "flag":
 					drawImage(data.flag, data, i, j, canvas)
+				elif grid[i][j] == "shield":
+					drawImage(data.shield, data, i, j, canvas)
 			except IndexError:
 				pass    
 
+def drawGridShift(data, grid, canvas):
+	for i in range(data.firstVisibleRow,data.visibleRows+data.firstVisibleRow):
+		for j in range(data.firstVisibleCol,data.visibleCols+data.firstVisibleCol):
+			if i < 0 or j < 0: continue
+			elif i >= len(grid) or j >= len(grid[0]): continue
+			try:
+				if grid[i][j] == True:
+					drawImageShift(data.block, data, i, j, canvas)
+				elif grid[i][j] == "ladder":
+					drawImageShift(data.ladder, data, i, j, canvas)
+				elif grid[i][j] == "gravel":
+					drawImageShift(data.gravel, data, i, j, canvas)
+				elif grid[i][j] == "jumpPower":
+					drawImageShift(data.jumpPower, data, i, j, canvas)
+				elif grid[i][j] == "obstacle":
+					drawImageShift(data.obstacle, data, i, j, canvas)
+				elif grid[i][j] == "flag":
+					drawImageShift(data.flag, data, i, j, canvas)
+			except IndexError:
+				pass  
 
 def drawPlayer(data, player, canvas):
 	x0, y0, x1, y1 = player.canvasGetBounds(data)
 	cx = (x0 +x1) / 2
 	cy = (y0+y1) / 2
 	canvas.create_image(cx, cy, image=data.playerImage)
+	if player.invincible == True: canvas.create_oval(x0, y0, x1, y1, width=1)
 
+def drawPlayerShift(data, player, canvas):
+	x0, y0, x1, y1 = player.canvasGetBounds(data)
+	x0 += data.shiftAmount
+	x1 += data.shiftAmount
+	cx = (x0 +x1) / 2 
+	cy = (y0+y1) / 2
+	canvas.create_image(cx, cy, image=data.playerImage)
+	if player.invincible == True: canvas.create_oval(x0, y0, x1, y1, width=1)
+
+#FIX THIS
 def drawPowerUp(data, canvas):
 	if data.player.hasPowerUp == "jump":
 		canvas.create_image(data.cellWidth//2, data.cellHeight//2, image=data.jumpPower)
 
 	if data.player.hasPowerUp == "shield":
-		canvas.create_image(data.cellWidth//2, data.cellHeight//2, image=data.jumpPower)
+		canvas.create_image(data.cellWidth//2, data.cellHeight//2, image=data.shield)
+def drawPowerUpShift(data, canvas):
+	if data.player.hasPowerUp == "jump":
+		canvas.create_image(data.cellWidth//2+data.shiftAmount, data.cellHeight//2, image=data.jumpPower)
 
+	if data.player.hasPowerUp == "shield":
+		canvas.create_image(data.cellWidth//2+data.shiftAmount, data.cellHeight//2, image=data.shield)
 
 
 def getSurfaceBlockGroundEnemies(block, data, col):
@@ -178,32 +229,42 @@ def getSurfaceBlockGroundEnemies(block, data, col):
 			return (row, col)
 	return (data.visibleRows//2, col)
 
-# def createNewGroundEnemies(data, amount):
-# 	randcol = random.randint(0, len(data.grid[0])-1)
-# 	randtup = getSurfaceBlockGroundEnemies(data.grid, data, randcol)
-# 	if randtup == None:
-# 		randtup = (randcol, )
-
-# 	for i in range(amount):
-# 		data.groundEnemies.append(GroundEnemy(randtup[0], randtup[1], data))
-
 def setLevelValues(data):
-	data.numGhosts += data.level*2
+	data.numGhosts += data.level
 	data.maxNumObstacles += data.level*2
 	data.gameLength += (data.level*5)
 	data.numFlyingObjects += data.level
+	data.objSpd += (data.level*3)
 
 	if data.level == 0:
 		data.backgroundImage = "background.png"
 		data.backgrounds.append(Background(data.backgroundImage, data, data.width//2, data.height//2, data.width))
 		data.block = createImage(data, data.cellWidth, data.cellHeight, "grassBlock.png")
-		data.flyingObjectImage = "fireball.png"
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
 	if data.level == 1:
 		data.backgroundImage = "caveBackground.jpg"
 		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
 		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
+	if data.level == 2:
+		data.backgroundImage = "lake.png"
+		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
+	if data.level == 3:	
+		data.backgroundImage = "nightTime.png"
+		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
 		data.flyingObjectImage = "boulder.png"
-		data.objSpd += (data.level*5)
+
+	if data.level == 4:	
+		data.backgroundImage = "mountains.png"
+		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage = "boulder.png"
+
+
+
 
 
 def addVictoryFlag(data):
@@ -233,3 +294,8 @@ def addVictoryFlag(data):
 def drawLevel(data, canvas):
 	canvas.create_rectangle(data.width-(data.cellWidth*2), 0, data.width, data.cellHeight*2, fill="light blue")
 	canvas.create_text(data.width-data.cellWidth, data.cellHeight, text=str(data.level+1))
+
+def drawLevelShift(data, canvas):
+	canvas.create_rectangle(data.width-(data.cellWidth*2)+data.shiftAmount, 0, data.width+data.shiftAmount,\
+		data.cellHeight*2, fill="light blue")
+	canvas.create_text(data.width-data.cellWidth+data.shiftAmount, data.cellHeight, text=str(data.level+1))

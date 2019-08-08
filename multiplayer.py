@@ -5,13 +5,14 @@ from procedural_generation import *
 from classes import *
 from enemies import *
 import copy, string, os
-# import multiplayer
+
 def getLevel(data):
 	file = open(data.textFile, "r")
 	for line in file.readlines():
-		if line.startswith("level"):
+		if line.startswith("multiLevel:"):
 			file.close()
-			return int(line[6])
+			linestr = line.replace("multiLevel:","")
+			return int(linestr[0])
 
 
 def createButton(data, x,y, canvas, Text):
@@ -23,7 +24,9 @@ def createButton(data, x,y, canvas, Text):
 
 def createflyingObjects(data):
 	for i in range(data.numFlyingObjects):
-		data.flyingObjects.append(FlyingObject(data, data.player))
+		data.flyingObjects.append(FlyingObject(data.flyingObjectImage, data, data.player))
+
+
 
 def init(data):
 	#data stuff for procedural generation
@@ -42,6 +45,9 @@ def init(data):
 	createStartBlock(data)
 	for i in range(2):
 		addBlocktoGrid(data, 0, True)
+	# data.previousCols = []
+	# data.nextCols = []
+	# data.nextBlocks = createNextBlocks(data)
 
 	#scroll data
 	data.scrollMarginLeft = 30
@@ -53,9 +59,11 @@ def init(data):
 	data.ladder = createImage(data, data.cellWidth, data.cellHeight, "ladder.png")
 	data.ghost = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "ghost.png")
 	data.jumpPower = createImage(data, data.cellWidth, data.cellHeight, "jumpPower.png")
+	data.rightFacingEnemy = createImage(data, data.cellWidth, data.cellHeight, "rightFacingGroundEnemy.png")
+	data.leftFacingEnemy = createImage(data, data.cellWidth, data.cellHeight, "leftFacingGroundEnemy.png")
 	data.obstacle = createImage(data, data.cellWidth, data.cellHeight, "spike.png")
 	data.flag = createImage(data, data.cellWidth, data.cellHeight, "flag.png")
-	data.shield = createImage(data,data.cellWidth, data.cellHeight, "basicShield.png")
+	# data.shield = createImage(data,data.cellWidth, data.cellHeight, "basicShield.png")
 
 
 
@@ -67,7 +75,7 @@ def init(data):
 	data.ghosts = []
 	data.flyingObjects = []
 
-	#values to be changed by level #CHANGE GAME LEVEL BEFORE SUBMITTING
+	#values to be changed by level
 	data.numGhosts = 1
 	data.gameLength = 10
 	data.textFile = "data.txt"
@@ -77,11 +85,10 @@ def init(data):
 	data.numFlyingObjects = 2
 	data.objSpd = 10
 
-	#UNCOMMENT THESE
 	data.level = getLevel(data)
 	setLevelValues(data)
-	# createNewGhosts(data)
-	# createflyingObjects(data)
+	createNewGhosts(data)
+	createflyingObjects(data)
 
 
 
@@ -90,71 +97,75 @@ def init(data):
 	data.createBlocks = True
 	data.scroll = True
 
-	#button stuff
-	data.gameIntro = True
-	data.instructions = False
-	data.modeScrn = False
-	data.running = False
 	data.quitButton = []
 	data.playButtonCoords = []
 	data.singleButton = []
 	data.multiButton = []
 	data.backButton = []
 
+	# #ground enemies
+	# data.groundEnemies = []
+	# data.initialGroundEnemies = 20
+	# createNewGroundEnemies(data, data.initialGroundEnemies)
 
-
-def clickedButton(button, event):
-	if event.x > button[0] and event.x < button[2]:
-		if event.y > button[1] and event.y < button[3]:
-			return True
-	return False
 def mousePressed(event, data):
-	# use event.x and event.y
-	if data.gameIntro:
-		if data.quitButton != []:
-			if clickedButton(data.quitButton, event):
-				exit()
-
-		if data.playButtonCoords != []:
-			if clickedButton(data.playButtonCoords, event):
-					data.modeScrn = True
-					data.gameIntro = False
-	if data.modeScrn:
-		if data.singleButton != []:
-			if clickedButton(data.singleButton, event):
-				data.mode = 1
-				data.running = True
-				data.modeScrn = False
-		if data.multiButton != []:
-			if clickedButton(data.multiButton, event):
-				data.mode = 2
-				data.modeScrn = False
-				multiplayer.run1(data.width*2, data.height)
-				exit()
-		if data.backButton != []:
-			if clickedButton(data.backButton, event):
-				data.gameIntro = True
-				data.modeScrn = False
-				data.instructions = False
-def keyPressed(event, data):
-	if data.running and not data.won:
+	pass	
+def keyPressedHelper(event, data):
+	if not data.won:
 		# use event.char and event.keysym
 		if not data.gameOver:
 			if event.keysym == "Right" and not data.player.climbing:
 				if data.player.moveHorizontal(1, data.grid, data):
 					moveEnemies(-1, 0,data)
 			if event.keysym == "Left" and not data.player.climbing:
-					if data.player.moveHorizontal(-1, data.grid, data):
-						moveEnemies(1,0,data)
+				if data.player.moveHorizontal(-1, data.grid, data):
+					moveEnemies(1,0,data)
 			if event.keysym == "space":
 				if data.player.jumping == False and data.player.inDescent == False: 
 					data.player.startJump()
 				if data.player.climbing:
 					data.player.startJump()
-			if event.keysym == "Up" and data.player.climbing and not data.player.onTopOfLadder:
+			if event.keysym == "Up" and data.player.climbing:
 				data.player.moveUpDownRow(data, -1)
 				moveEnemies(0,1,data)
 			if event.keysym == "Down":
+				data.player.moveUpDownRow(data, 1)
+
+			#prevents phasing into a block if user spams right or left
+			while data.player.checkForCollison(data.grid, data.firstVisibleCol, data):
+				if event.keysym == "Right":
+					data.player.col -= 1
+				if event.keysym == "Left":
+					data.player.col += 1
+		if event.keysym == "l":
+			init(data)
+	if data.won:
+		if event.keysym == "n":
+				replaceText("multiLevel:"+str(data.level), "multiLevel:"+str(data.level+1), data.textFile)
+				init(data)
+				data.won = False
+	if event.keysym == "i":
+		replaceText("level:"+str(data.level), "level:0", data.textFile)
+
+def keyPressedHelper2(event, data):
+	if not data.won:
+		# use event.char and event.keysym
+		if not data.gameOver:
+			if event.keysym == "a" and not data.player.climbing:
+				if data.player.moveHorizontal(1, data.grid, data):
+					moveEnemies(-1, 0,data)
+			if event.keysym == "d" and not data.player.climbing:
+				if data.player.moveHorizontal(-1, data.grid, data):
+					moveEnemies(1,0,data)
+			if event.keysym == "g":
+				if data.player.jumping == False and data.player.inDescent == False: 
+					data.player.startJump()
+				if data.player.climbing:
+					data.player.startJump()
+			if event.keysym == "w" and data.player.climbing:
+				data.player.moveUpDownRow(data, -1)
+				moveEnemies(0,1,data)
+			if event.keysym == "s":
 				data.player.moveUpDownRow(data, 1)
 
 			#prevents phasing into a block if user spams right or left
@@ -172,15 +183,12 @@ def keyPressed(event, data):
 				data.won = False
 	if event.keysym == "i":
 		replaceText("level:"+str(data.level), "level:0", data.textFile)
-
-def timerFired(data):
-	if data.running and not data.won:
+def timerFiredHelper(data):
+	if not data.won:
 		data.timeElapsed += 1
-		if data.player.row >= data.firstVisibleRow + data.visibleRows-1: 
-			data.gameOver = True
+		if data.player.row >= data.firstVisibleRow + data.visibleRows-1: data.gameOver = True
 		try:
-			if data.player.checkForGravel(data): 
-				data.gameOver = True
+			if data.player.checkForGravel(data): data.gameOver = True
 		except IndexError:
 			data.gameOver = True
 		if not data.gameOver:
@@ -203,6 +211,9 @@ def timerFired(data):
 					data.player.inUpLeft = False
 					data.player.inUpDownBlock = False
 
+			if data.player.inUpDownBlock and not data.player.jumping and not data.player.climbing:
+				if data.grid[data.player.row+1][data.player.col+data.firstVisibleCol] != True:
+					data.player.row +=1
 
 			#enemies
 			for ghost in data.ghosts:
@@ -215,12 +226,17 @@ def timerFired(data):
 			#prevents ghosts from spawning when climbing:
 			if data.player.climbing == True:
 				data.ghosts = []
-			#CHANGE THIS
 			# #spawns the enemies ##################
-			# if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
-			#     createNewGhosts(data)
+			if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
+			    createNewGhosts(data)
 			# ##################
-
+			# if data.timeElapsed % 3 == 0:
+			#     for enemy in data.groundEnemies:
+			#         if enemy.inBounds(data):
+			#             enemy.pathFinding(data)
+			# for enemy in data.groundEnemies:
+			#     if enemy.checkPlayerCollision(data.player, data.firstVisibleCol):
+			#         data.gameOver = True
 
 
 			if data.numBlocks >= data.gameLength:
@@ -248,20 +264,15 @@ def timerFired(data):
 
 			if data.player.hasPowerUp != None:
 				data.powerUpTime += 1
-				if data.powerUpTime % 100 == 0 and data.player.hasPowerUp =="jumpPower":
+				if data.powerUpTime % 100 == 0:
 					data.powerUpTime = 0
 					data.player.reversePowerUp()
-					data.player.hasPowerUp = None
-				if data.powerUpTime % 50 == 0 and data.player.hasPowerUp =="shield":
-					data.powerUpTime = 0
-					data.player.reversePowerUp()
-					data.player.hasPowerUp = None
-			#UNCOMMENT THIS
-			# if data.flyingObjects == []:
-			# 	data.addObjTime += 1
-			# 	if data.addObjTime % 50 == 0:
-			# 		data.addObjTime = 0
-			# 		createflyingObjects(data)
+					data.player.hasPowerUp = None 
+			if data.flyingObjects == []:
+				data.addObjTime += 1
+				if data.addObjTime % 50 == 0:
+					data.addObjTime = 0
+					createflyingObjects(data)
 
 			data.player.checkForObstacle(data)
 			#removes extrablocks
@@ -275,22 +286,8 @@ def timerFired(data):
 				data.player.lowerBound, data.player.upperBound = getVerticalScrollBounds(data)
 			
 
-def redrawAll(canvas, data):
-	#intro screen
-	if data.gameIntro:
-		canvas.create_rectangle(0, 0, data.width,data.height, fill="light green")
-		canvas.create_text(data.width//2, data.height//4, text="Racing Platformer", font="Arial 65")
-		data.quitButton = createButton(data, data.width//4, data.height*(3/4), canvas, "Quit")
-		data.playButtonCoords = createButton(data, data.width*(3/4), data.height*(3/4), canvas, "Mode")
-	
-	if data.modeScrn:
-		canvas.create_rectangle(0, 0, data.width,data.height, fill="light green")
-		canvas.create_text(data.width//2, data.height//4, text="Choose Mode", font="Arial 65")
-		data.singleButton = createButton(data, data.width//4, data.height*(3/4), canvas, "SinglePlayer")
-		data.backButton = createButton(data, data.width//2, data.height*(3/4), canvas, "Back")
-		data.multiButton = createButton(data, data.width*(3/4), data.height*(3/4), canvas, "MultiPlayer")
-
-	if data.running:
+def redrawAll1(canvas, data):
+	if not data.gameOver:
 		#background 
 		for background in data.backgrounds:
 			background.draw(canvas)
@@ -314,39 +311,85 @@ def redrawAll(canvas, data):
 				canvas.create_text(data.width//2, data.height*(2/3), text="press n for next level",\
 					font="Arial 20")
 	if data.gameOver:
-		drawGameOver(data,canvas)
+		canvas.create_rectangle(0, 0, data.width,data.height, fill="light green")
+		canvas.create_text(data.width//2, data.height//2, text="GAME OVER", font="Arial 75")
+		canvas.create_text(data.width//2, data.height*(3/4), text="Press l to restart", font="Arial 50")
 
 
+def redrawAll2(canvas, data):
+	if not data.gameOver:
+		for background in data.backgrounds:
+			background.drawShift(canvas, data)
+		# draw in canvas
+	if not data.gameOver:
+		drawGridShift(data, data.grid, canvas)
+		drawLevelShift(data,canvas)
+		drawPowerUpShift(data, canvas)
+		drawPlayerShift(data, data.player, canvas)
+		for ghost in data.ghosts:
+			ghost.drawShift(canvas,data.ghost, data)
+		for obj in data.flyingObjects:
+			obj.drawShift(canvas, data)
+	if data.gameOver:
+		drawGameOverShift(data,canvas)
+
+
+def keyPressed(event, data1, data2):
+	keyPressedHelper(event, data1)
+	keyPressedHelper2(event, data2)
+
+
+def timerFired(data1, data2):
+	timerFiredHelper(data1)
+	timerFiredHelper(data2)
+
+
+def redrawAll(canvas,data1, data2):
+	redrawAll1(canvas, data1)
+	redrawAll2(canvas, data2)
 #this is not my orginal code https://www.cs.cmu.edu/~112-n19/notes/notes-animations-part2.html
-def run(width, height):
-	def redrawAllWrapper(canvas, data):
+def run1(width, height):
+	def redrawAllWrapper(canvas, data1, data2, data):
 		canvas.delete(ALL)
 		canvas.create_rectangle(0, 0, data.width, data.height,
 								fill='white', width=0)
-		redrawAll(canvas, data)
+		redrawAll(canvas, data1, data2)
 		canvas.update()
 
 	def mousePressedWrapper(event, canvas, data):
 		mousePressed(event, data)
-		redrawAllWrapper(canvas, data)
+		redrawAllWrapper(canvas, data1, data2, data)
 
-	def keyPressedWrapper(event, canvas, data):
-		keyPressed(event, data)
-		redrawAllWrapper(canvas, data)
+	def keyPressedWrapper(event, canvas, data1, data2, data):
+		keyPressed(event, data1, data2)
+		redrawAllWrapper(canvas, data1, data2, data)
 
-	def timerFiredWrapper(canvas, data):
-		timerFired(data)
-		redrawAllWrapper(canvas, data)
+	def timerFiredWrapper(canvas, data1, data2, data):
+		timerFired(data1, data2)
+		redrawAllWrapper(canvas, data1, data2, data)
 		# pause, then call timerFired again
-		canvas.after(data.timerDelay, timerFiredWrapper, canvas, data)
-	# Set up data and call init
+		canvas.after(data.timerDelay, timerFiredWrapper, canvas, data1, data2, data)
+
 	class Struct(object): pass
 	data = Struct()
 	data.width = width
 	data.height = height
 	data.timerDelay = 100 # milliseconds/10
+
+	data1 = Struct()
+	data1.width = width//2
+	data1.height = height
+
+	# data1.timerDelay = 100 # milliseconds/10
+	data2 = Struct()
+	data2.width = width//2
+	data2.shiftAmount = width//2
+	data2.height = height
+	# data2.timerDelay = 100 # milliseconds/10
 	root = Tk()
-	init(data)
+	init(data1)
+	init(data2)
+
 	# create the root and the canvas
 	canvas = Canvas(root, width=data.width, height=data.height)
 	canvas.configure(bd=0, highlightthickness=0)
@@ -355,8 +398,8 @@ def run(width, height):
 	root.bind("<Button-1>", lambda event:
 							mousePressedWrapper(event, canvas, data))
 	root.bind("<Key>", lambda event:
-							keyPressedWrapper(event, canvas, data))
-	timerFiredWrapper(canvas, data)
+							keyPressedWrapper(event, canvas, data1, data2, data))
+	timerFiredWrapper(canvas, data1, data2, data)
 	# and launch the app
 	root.mainloop()  # blocks until window is closed
 	print("quitted")
@@ -364,6 +407,6 @@ def run(width, height):
 
 
 
-run(768,576)
 
 
+#run1(576*2, 432)

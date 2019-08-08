@@ -9,12 +9,11 @@ class Player:
 		startcell = self.getStartCell(data,1)
 		self.row = startcell[0]-1
 		self.col = startcell[1]
-		self.fallSpd = 25
+		self.fallSpd = 20
 		self.maxCol = data.visibleCols//2 + 1
 		self.minCol = 1
 		self.minRow = 5
 		self.maxRow = data.visibleRows - 5
-		self.y0 = self.row*self.height
 		self.startRow = None
 		self.jumping = False
 		self.falling = True
@@ -25,9 +24,12 @@ class Player:
 		self.lowerBound = None
 		self.upperBound = None
 		self.inBounds = False
-		self.maxJump = 3
+		self.maxJump = 4
+		self.baseMaxJump = 3
 		self.hasPowerUp = None
 		self.inUpLeft = False
+		self.onTopOfLadder = False
+		self.invincible = False
 
 	def getStartCell(self, data, col):
 		for row in range(data.firstVisibleRow + data.visibleRows//2,\
@@ -36,8 +38,7 @@ class Player:
 				return (row, col)
 		return(12, 12)
 
-	def resetY0(self):
-		self.y0 = self.row*self.height
+
 
 	def moveHorizontal(self, dx,grid,data):
 		self.col += dx
@@ -48,32 +49,40 @@ class Player:
 	
 	def getBounds(self):
 		x0 = self.col*self.width
-		y0 = self.y0
+		y0 = self.row*self.height
 		return x0, y0, x0+self.width, y0+self.height
 
 	def checkForCollison(self, grid, col, data):
-	   # print(self.col, self.row)
 		try:
 			if grid[self.row][self.col + col] == True or grid[self.row][self.col + col] == "gravel":
+				self.inDescent = False
 				return True
 			elif grid[self.row][self.col + col] == "ladder":
 				self.falling = False
 				self.climbing = True
 			#prevents player from escaping the ladder upwards
-			elif self.jumping == False:
-				self.falling = True
-				self.climbing = False
+			elif grid[self.row+1][self.col + col] == "ladder" and data.firstVisibleRow % 24 == 0:
+				self.onTopOfLadder = True
+				print("kachow")
+				# self.climbing = True
+				self.inDescent = False
+
+
 			#jumpPowerUp
 			if grid[self.row][self.col + col] == "jumpPower":
 				grid[self.row][self.col+col] = False
 				self.hasPowerUp = "jump"
 				self.maxJump += 1
+
+			#shield
+			if grid[self.row][self.col + col] == "shield":
+				grid[self.row][self.col+col] = False
+				self.hasPowerUp = "shield"
+				self.invincible = True
 			return False
 		except IndexError:
 			data.gameOver = True
-	def getRow(self):
-		row = divide_round_up(self.y0,self.height)
-		self.row = row
+
 
 	def scrollHorizontal(self, dx, data):
 		if self.col < self.minCol and data.firstVisibleCol > 0:
@@ -90,20 +99,16 @@ class Player:
 			data.firstVisibleCol += 1
 			for background in data.backgrounds:
 				background.scroll(data, 1, 0)
+			for obj in data.flyingObjects:
+				obj.move(data)
 			return True
 		return False
 	
-	def moveVertical(self,data, dy):
-		self.y0 += dy
-		self.getRow()
+
+	def moveVertical(self,data,dy):
+		self.row += dy
 		if self.checkForCollison(data.grid, data.firstVisibleCol, data):
-			self.inBounds = False
-			self.startRow = None
-			self.y0 -= dy
-			self.getRow()
-			if self.inDescent == True:
-				self.inDescent = False
-				self.y0 = self.row*self.height
+			self.row -= dy
 	
 	def moveUpDownRow(self, data, dy):
 		if data.grid[self.row+1][self.col+data.firstVisibleCol] == True or\
@@ -118,14 +123,7 @@ class Player:
 		if data.firstVisibleRow < self.lowerBound or\
 			data.firstVisibleRow+data.visibleRows > self.upperBound:
 			data.firstVisibleRow -= dy
-			# if data.firstVisibleRow % 23 == 0:
-			# 	self.climbing = False
-			# 	self.falling = False
-		# else:
-		# 	for background in data.backgrounds:
-		# 		background.scroll(data, 0, dy)
-		self.row += dy
-		self.resetY0()
+
 
 
 	def getMaxJumpRow(self, grid,data):
@@ -137,18 +135,18 @@ class Player:
 		self.startRow = self.row
 		self.jumping = True    
 		self.falling = False
+		self.climbing = False
 
 	def jump(self, data):
-		self.moveVertical(data, -self.jumpSpd)
+		self.moveVertical(data, -1)
 		if self.row <= self.getMaxJumpRow(data.grid, data) or self.falling == True:
 			self.jumping = False
 			self.falling = True
 			self.inDescent = True
 	
 	def fall(self, data):
-		self.inDescent = True
 		if self.jumping == False:
-			self.moveVertical(data, self.fallSpd)
+			self.moveVertical(data, 1)
 
 	def checkForGravel(self, data):
 		for i in range(4):
@@ -175,21 +173,21 @@ class Player:
 	def reversePowerUp(self):
 		if self.hasPowerUp == "jump":
 			self.maxJump -= 1
+		if self.hasPowerUp == "shield":
+			self.invincible = False
 
 
 	def isOnLand(self, data):
-		try:
-			if data.grid[self.row+1][self.col+data.firstVisibleCol] == True:
-				return True
-
-		except IndexError:
-			data.gameOver = True
+		if data.grid[self.row+1][self.col+data.firstVisibleCol] == True:
+			return True
 		return False
 
 	def checkForObstacle(self, data):
 		try:
 			if data.grid[self.row][self.col + data.firstVisibleCol] == "obstacle":
-				data.gameOver = True
+				if not self.invincible:
+					data.gameOver = True					
+
 		except IndexError:
 			data.gameOver = True
 
@@ -215,6 +213,8 @@ class Background:
 	def draw(self, canvas):
 		canvas.create_image(self.cx, self.cy, image=self.background)
 
+	def drawShift(self, canvas, data):
+		canvas.create_image(self.cx+data.shiftAmount, self.cy, image=self.background)
 
 	def scroll(self, data, dx, dy):
 		self.cx += ((data.firstVisibleCol*data.cellWidth)/50)*dx*-1
@@ -229,24 +229,23 @@ class Background:
 
 
 
+
 class FlyingObject:
 
-	def __init__(self, img, data, player):
+	def __init__(self,data, player):
 		self.width = int(data.cellWidth*1.5)
 		self.height = int(data.cellHeight*1.5)
-		self.cx = data.height + self.height
+		self.cx = data.width + self.width
 		self.cy = random.randint(self.height//2, data.height-(self.height//2))
-		self.imgStr = img
-		self.img = self.createImage(data)
 		self.speed = data.objSpd
 		self.player = player
 
-	def createImage(self,data):
-		return createImage(data, self.width, self.height, self.imgStr)
 
+	def draw(self, canvas,data):
+		canvas.create_image(self.cx, self.cy, image=data.flyingObjectImage)
 
-	def draw(self, canvas):
-		canvas.create_image(self.cx, self.cy, image=self.img)
+	def drawShift(self, canvas, data):
+		canvas.create_image(self.cx+data.shiftAmount, self.cy, image=data.flyingObjectImage)
 
 	def move(self, data):
 		self.cx -= self.speed
@@ -255,4 +254,5 @@ class FlyingObject:
 	def collision(self,player,data):
 		cx, cy = player.getCanvasCenter(data)
 		if abs(self.cx - cx) <= self.width//2 and abs(self.cy-cy) <= self.width//2:
-			data.gameOver = True
+			if not player.invincible:
+				data.gameOver = True
