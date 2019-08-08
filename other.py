@@ -21,9 +21,9 @@ def addBlocktoGrid(data, blockType = None, start=False):
 			data.player.inUpDownBlock = True
 			data.firstVisibleCol = len(data.grid[0])-data.visibleCols
 			data.player.falling = True
-			# data.player.maxJump = data.player.baseMaxJump
+			data.player.maxJump = data.player.baseMaxJump
 		if blockType == 0:
-			# data.player.maxJump = data.player.baseMaxJump+1
+			data.player.maxJump = data.player.baseMaxJump+1
 
 			if data.player.inUpDownBlock == True:
 				data.player.inUpLeft = True
@@ -70,11 +70,8 @@ def addUpBlock(data, block, typee):
 
 def addceilingLadder(data, block):
 	for row in range(0, len(block)//2):
-		try:
-			col = 3
-			data.grid[row][len(data.grid[0]) - col] = False
-		except:
-			pass
+		col = 3
+		data.grid[row][len(data.grid[row]) - col] = False
 
 	for row in range(0, len(block)):
 			data.grid[row][len(data.grid[0])-1] = True
@@ -104,21 +101,23 @@ def getVerticalScrollBounds(data):
 	checking = True
 	while checking:
 		row -= 1
-		for col in range(len(data.grid[0])-data.visibleCols, len(data.grid[0])):	
+		row = max(row, 0)
+		for col in range(len(data.grid[row])-data.visibleCols, len(data.grid[row])):	
 			if row == data.firstVisibleRow -1 :continue		
 			if data.grid[row][col] == "gravel":
+				
 				checking = False	
 	lowerBound = row
 	checking = True
 	row = data.firstVisibleRow
 	while checking:
 		row += 1
-		for col in range(len(data.grid[0])-data.visibleCols, len(data.grid[0])):	
-			try:
+		for col in range(len(data.grid[row])-data.visibleCols, len(data.grid[row])):
+			try:	
 				if data.grid[row][col] == "gravel":
 					checking = False	
-			except:
-				print(row,col)
+			except IndexError:
+				print(IndexError)
 	upperBound = row
 	return lowerBound, upperBound
 
@@ -130,8 +129,8 @@ def drawGameOver(data,canvas):
 
 def drawGameOverShift(data,canvas):
 	canvas.create_rectangle(data.shiftAmount, 0, data.width+data.shiftAmount,data.height, fill="light green")
-	canvas.create_text(data.width//2+data.shiftAmount, data.height//2, text="GAME OVER", font="Arial 75")
-	canvas.create_text(data.width//2+data.shiftAmount, data.height*(3/4), text="Press r to restart", font="Arial 50")
+	canvas.create_text(data.width//2+data.shiftAmount, data.height//2, text="GAME OVER", font="Arial 50")
+	canvas.create_text(data.width//2+data.shiftAmount, data.height*(3/4), text="Press r to restart", font="Arial 25")
 
 def drawImage(img, data, i, j, canvas):
 	j = j - data.firstVisibleCol
@@ -265,11 +264,25 @@ def setLevelValues(data):
 
 
 
-
+def addEndBlock(data):
+	block = copy.deepcopy(data.emptyBlock)
+	numRows = data.visibleRows
+	numCols = data.visibleCols
+	baseTerrain = 2
+	for col in range(numCols):
+		block[0][col] = "gravel"
+		block[1][col] = True
+		block[numRows-1][col] = "gravel"
+		block[numRows-baseTerrain][col] = True
+	for row in range(len(block)):
+		data.grid[row] += block[row]
 
 def addVictoryFlag(data):
 	for row in range(len(data.grid)):
-		data.grid[row][-1] = True
+		try:
+			data.grid[row][-1] = True
+		except IndexError:
+			pass
 	for row in range(data.player.row-4, data.player.row+15):
 		if data.player.inUpDownBlock == True: break
 		try:

@@ -46,6 +46,7 @@ class Player:
 				self.col -= dx
 		if self.inUpDownBlock != True and self.inUpLeft != True and data.scroll==True:
 			return self.scrollHorizontal(dx, data)
+		return False
 	
 	def getBounds(self):
 		x0 = self.col*self.width
@@ -61,21 +62,24 @@ class Player:
 				self.falling = False
 				self.climbing = True
 			#prevents player from escaping the ladder upwards
-			elif grid[self.row+1][self.col + col] == "ladder" and data.firstVisibleRow % 24 == 0:
+			elif grid[self.row+1][self.col + col] == "ladder":
+				print("fuck")
 				self.onTopOfLadder = True
-				print("kachow")
+				self.scrollVertical(-1, data)
 				# self.climbing = True
 				self.inDescent = False
 
+			else:
+				self.onTopOfLadder = False
 
 			#jumpPowerUp
-			if grid[self.row][self.col + col] == "jumpPower":
+			if grid[self.row][self.col + col] == "jumpPower" and self.hasPowerUp == None:
 				grid[self.row][self.col+col] = False
 				self.hasPowerUp = "jump"
 				self.maxJump += 1
 
 			#shield
-			if grid[self.row][self.col + col] == "shield":
+			if grid[self.row][self.col + col] == "shield" and self.hasPowerUp == None:
 				grid[self.row][self.col+col] = False
 				self.hasPowerUp = "shield"
 				self.invincible = True
@@ -178,8 +182,11 @@ class Player:
 
 
 	def isOnLand(self, data):
-		if data.grid[self.row+1][self.col+data.firstVisibleCol] == True:
-			return True
+		try:
+			if data.grid[self.row+1][self.col+data.firstVisibleCol] == True:
+				return True
+		except IndexError:
+			data.gameOver = True
 		return False
 
 	def checkForObstacle(self, data):

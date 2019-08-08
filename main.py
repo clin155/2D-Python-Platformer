@@ -33,11 +33,23 @@ def init(data):
 	data.firstVisibleRow = 0
 	data.cellWidth = int(data.width / data.visibleCols)
 	data.cellHeight = int(data.height /data.visibleRows)
-	data.emptyBlock = [[False]*data.visibleCols for i in range(data.visibleRows)]
-	data.grid = copy.deepcopy(data.emptyBlock)
+	#values to be changed by level #CHANGE GAME LEVEL BEFORE SUBMITTING
+	data.numGhosts = 1
+	data.gameLength = 10
+	data.textFile = "data.txt"
+	data.backgroundImage = None
+	data.flyingObjectImage = None
+	data.block = None
+	data.numFlyingObjects = 2
+	data.objSpd = 10
+	data.maxNumObstacles = 3
+	data.backgrounds = []
+	data.level = getLevel(data)
+	setLevelValues(data)
 	data.numBlocks = 4
 
-	data.maxNumObstacles = 3
+	data.emptyBlock = [[False]*data.visibleCols for i in range(data.visibleRows)]
+	data.grid = copy.deepcopy(data.emptyBlock)
 
 	createStartBlock(data)
 	for i in range(2):
@@ -63,23 +75,13 @@ def init(data):
 	data.powerUpTime = 0
 	data.addObjTime = 0
 	#ghost enemies
-	data.backgrounds = []
+
 	data.ghosts = []
 	data.flyingObjects = []
 
-	#values to be changed by level #CHANGE GAME LEVEL BEFORE SUBMITTING
-	data.numGhosts = 1
-	data.gameLength = 10
-	data.textFile = "data.txt"
-	data.backgroundImage = None
-	data.flyingObjectImage = None
-	data.block = None
-	data.numFlyingObjects = 2
-	data.objSpd = 10
+
 
 	#UNCOMMENT THESE
-	data.level = getLevel(data)
-	setLevelValues(data)
 	# createNewGhosts(data)
 	# createflyingObjects(data)
 
@@ -129,8 +131,7 @@ def mousePressed(event, data):
 			if clickedButton(data.multiButton, event):
 				data.mode = 2
 				data.modeScrn = False
-				multiplayer.run1(data.width*2, data.height)
-				exit()
+				multiplayer.run1(576*2, 432)
 		if data.backButton != []:
 			if clickedButton(data.backButton, event):
 				data.gameIntro = True
@@ -154,7 +155,7 @@ def keyPressed(event, data):
 			if event.keysym == "Up" and data.player.climbing and not data.player.onTopOfLadder:
 				data.player.moveUpDownRow(data, -1)
 				moveEnemies(0,1,data)
-			if event.keysym == "Down":
+			if event.keysym == "Down" and not data.player.onTopOfLadder:
 				data.player.moveUpDownRow(data, 1)
 
 			#prevents phasing into a block if user spams right or left
@@ -225,10 +226,13 @@ def timerFired(data):
 
 			if data.numBlocks >= data.gameLength:
 				data.createBlocks = False
+				addEndBlock(data)
 				addVictoryFlag(data)
 				data.numBlocks = 0
-			
+
 			if data.createBlocks == False:
+				if data.player.inUpDownBlock == True:
+					data.player.inUpLeft = True
 				if data.firstVisibleCol + data.visibleCols >= len(data.grid[0]):
 					data.firstVisibleCol = len(data.grid[0])-data.visibleCols
 					data.scroll = False
@@ -237,7 +241,7 @@ def timerFired(data):
 			data.backgrounds[0].needNewBackground(data)
 
 			for background in data.backgrounds:
-				if background.cx < (data.firstVisibleCol*data.cellWidth)-(data.width*2.5):
+				if background.cx < (data.firstVisibleCol*data.cellWidth)-(data.width*3):
 					data.backgrounds.remove(background)
 					break
 
@@ -365,5 +369,6 @@ def run(width, height):
 
 
 run(768,576)
+
 
 
