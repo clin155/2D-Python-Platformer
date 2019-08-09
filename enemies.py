@@ -31,7 +31,7 @@ class Ghost:
 		self.width = data.cellWidth*2
 		self.height = data.cellHeight *2
 		self.direction = [0,0]
-		self.spd = 16
+		self.spd = 13
 
 	def move(self, player, data):
 		cx, cy = player.getCanvasCenter(data)

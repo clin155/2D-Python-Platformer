@@ -270,6 +270,6 @@ class FlyingObject:
 
 	def collision(self,player,data):
 		cx, cy = player.getCanvasCenter(data)
-		if abs(self.cx - cx) <= self.width//2 and abs(self.cy-cy) <= self.width//2:
+		if abs(self.cx - cx) <= self.width//2 and abs(self.cy-cy) <= self.height//2:
 			if not player.invincible:
 				data.gameOver = True
