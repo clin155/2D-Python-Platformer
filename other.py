@@ -21,9 +21,9 @@ def addBlocktoGrid(data, blockType = None, start=False):
 			data.player.inUpDownBlock = True
 			data.firstVisibleCol = len(data.grid[0])-data.visibleCols
 			data.player.falling = True
-			data.player.maxJump = data.player.baseMaxJump
+			# data.player.maxJump = data.player.baseMaxJump
 		if blockType == 0:
-			data.player.maxJump = data.player.baseMaxJump+1
+			# data.player.maxJump = data.player.baseMaxJump+1
 
 			if data.player.inUpDownBlock == True:
 				data.player.inUpLeft = True
@@ -188,6 +188,8 @@ def drawGridShift(data, grid, canvas):
 					drawImageShift(data.obstacle, data, i, j, canvas)
 				elif grid[i][j] == "flag":
 					drawImageShift(data.flag, data, i, j, canvas)
+				elif grid[i][j] == "shield":
+					drawImageShift(data.shield, data, i, j, canvas)
 			except IndexError:
 				pass  
 
@@ -248,21 +250,59 @@ def setLevelValues(data):
 	if data.level == 2:
 		data.backgroundImage = "lake.png"
 		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
-		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
-		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "ice.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "waterBall.png")
 	if data.level == 3:	
 		data.backgroundImage = "nightTime.png"
 		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
 		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
-		data.flyingObjectImage = "boulder.png"
-
+		data.flyingObjectImage =  createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
 	if data.level == 4:	
 		data.backgroundImage = "mountains.png"
 		data.backgrounds.append(Background(data.backgroundImage, data, data.width, data.height//2, data.width*2))
 		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
-		data.flyingObjectImage = "boulder.png"
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
+
+	if data.level > 4:
+		data.backgroundImage = "background.png"
+		data.backgrounds.append(Background(data.backgroundImage, data, data.width//2, data.height//2, data.width))
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "grassBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
 
 
+def setLevelValuesM(data):
+	data.numGhosts += data.level
+	data.maxNumObstacles += data.level*2
+	data.gameLength += (data.level*5)
+	data.numFlyingObjects += data.level
+	data.objSpd += (data.level*3)
+
+	if data.level == 0:
+		data.backgroundImage = "background.png"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "grassBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
+	if data.level == 1:
+		data.backgroundImage = "caveBackground.jpg"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
+	if data.level == 2:
+		data.backgroundImage = "lake.png"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "ice.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "waterBall.png")
+	if data.level == 3:	
+		data.backgroundImage = "nightTime.png"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage =  createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
+
+	if data.level == 4:	
+		data.backgroundImage = "mountains.png"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
+	if data.level > 4:
+		data.backgroundImage = "background.png"
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "grassBlock.png")
+		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "fireball.png")
+	data.backgrounds.append(Background(data.backgroundImage, data, data.width//2, data.height//2, data.width))
 
 def addEndBlock(data):
 	block = copy.deepcopy(data.emptyBlock)

@@ -29,7 +29,7 @@ def createflyingObjects(data):
 
 
 
-def init(data, grid=None):
+def init(data, time=0):
 	#data stuff for procedural generation
 	data.visibleCols = 32
 	data.visibleRows = 24
@@ -50,17 +50,12 @@ def init(data, grid=None):
 	data.objSpd = 10
 	data.maxNumObstacles = 3
 	data.level = getLevel(data)
-	setLevelValues(data)
+	setLevelValuesM(data)
 	data.numBlocks = 4
-
-	if grid == None:
-		data.grid = copy.deepcopy(data.emptyBlock)
-		createStartBlock(data)
-		for i in range(2):
-			addBlocktoGrid(data, 0, True)
-	
-	else:
-		data.grid = grid
+	data.grid = copy.deepcopy(data.emptyBlock)
+	createStartBlock(data)
+	for i in range(2):
+		addBlocktoGrid(data, 0, True)
 
 
 	#scroll data
@@ -79,7 +74,7 @@ def init(data, grid=None):
 
 
 
-	data.timeElapsed = 0
+	data.timeElapsed = time
 	data.powerUpTime = 0
 	data.addObjTime = 0
 	#ghost enemies
@@ -91,8 +86,8 @@ def init(data, grid=None):
 
 	#UNCOMMENT THESE
 
-	# createNewGhosts(data)
-	# createflyingObjects(data)
+	createNewGhosts(data)
+	createflyingObjects(data)
 
 
 
@@ -115,10 +110,10 @@ def keyPressedHelper(event, data):
 		# use event.char and event.keysym
 		if not data.gameOver:
 			if event.keysym == "Right" and not data.player.climbing:
-				if data.player.moveHorizontal(1, data.grid, data):
+				if data.player.moveHorizontal(1, data.grid, data, True):
 					moveEnemies(-1, 0,data)
 			if event.keysym == "Left" and not data.player.climbing:
-					if data.player.moveHorizontal(-1, data.grid, data):
+					if data.player.moveHorizontal(-1, data.grid, data, True):
 						moveEnemies(1,0,data)
 			if event.keysym == "space":
 				if data.player.jumping == False and data.player.inDescent == False: 
@@ -138,12 +133,8 @@ def keyPressedHelper(event, data):
 				if event.keysym == "Left":
 					data.player.col += 1
 		if event.keysym == "l":
-			init(data, data.grid)
-	# if data.won:
-	# 	if event.keysym == "n":
-	# 			replaceText("level:"+str(data.level), "level:"+str(data.level+1), data.textFile)
-	# 			init(data)
-	# 			data.won = False
+			init(data, data.timeElapsed)
+
 	if event.keysym == "i":
 		replaceText("level:"+str(data.level), "level:0", data.textFile)
 
@@ -152,10 +143,10 @@ def keyPressedHelper2(event, data):
 		# use event.char and event.keysym
 		if not data.gameOver:
 			if event.keysym == "d" and not data.player.climbing:
-				if data.player.moveHorizontal(1, data.grid, data):
+				if data.player.moveHorizontal(1, data.grid, data, True):
 					moveEnemies(-1, 0,data)
 			if event.keysym == "a" and not data.player.climbing:
-				if data.player.moveHorizontal(-1, data.grid, data):
+				if data.player.moveHorizontal(-1, data.grid, data, True):
 					moveEnemies(1,0,data)
 			if event.keysym == "g":
 				if data.player.jumping == False and data.player.inDescent == False: 
@@ -175,12 +166,8 @@ def keyPressedHelper2(event, data):
 				if event.keysym == "a":
 					data.player.col += 1
 		if event.keysym == "r":
-			init(data, data.grid)
-	# if data.won:
-	# 	if event.keysym == "n":
-	# 			replaceText("level:"+str(data.level), "level:"+str(data.level+1), data.textFile)
-	# 			init(data)
-	# 			data.won = False
+			init(data, data.timeElapsed)
+
 	if event.keysym == "i":
 		replaceText("level:"+str(data.level), "level:0", data.textFile)
 def timerFiredHelper(data):
@@ -227,8 +214,8 @@ def timerFiredHelper(data):
 				data.ghosts = []
 			#CHANGE THIS
 			# #spawns the enemies ##################
-			# if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
-			#     createNewGhosts(data)
+			if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
+			    createNewGhosts(data)
 			# ##################
 
 
@@ -247,12 +234,6 @@ def timerFiredHelper(data):
 					data.scroll = False
 				data.player.checkIfWon(data)
 
-			data.backgrounds[0].needNewBackground(data)
-
-			for background in data.backgrounds:
-				if background.cx < (data.firstVisibleCol*data.cellWidth)-(data.width*3):
-					data.backgrounds.remove(background)
-					break
 
 			for obj in data.flyingObjects:
 				if obj.cx < -(data.width//2):
@@ -261,20 +242,21 @@ def timerFiredHelper(data):
 
 			if data.player.hasPowerUp != None:
 				data.powerUpTime += 1
-				if data.powerUpTime % 100 == 0 and data.player.hasPowerUp =="jumpPower":
+				if data.powerUpTime % 50 == 0 and data.player.hasPowerUp =="jump":
 					data.powerUpTime = 0
 					data.player.reversePowerUp()
 					data.player.hasPowerUp = None
-				if data.powerUpTime % 50 == 0 and data.player.hasPowerUp =="shield":
+				#50
+				if data.powerUpTime % 50== 0 and data.player.hasPowerUp =="shield":
 					data.powerUpTime = 0
 					data.player.reversePowerUp()
 					data.player.hasPowerUp = None
 			#UNCOMMENT THIS
-			# if data.flyingObjects == []:
-			# 	data.addObjTime += 1
-			# 	if data.addObjTime % 50 == 0:
-			# 		data.addObjTime = 0
-			# 		createflyingObjects(data)
+			if data.flyingObjects == []:
+				data.addObjTime += 1
+				if data.addObjTime % 50 == 0:
+					data.addObjTime = 0
+					createflyingObjects(data)
 
 			data.player.checkForObstacle(data)
 			#removes extrablocks
@@ -293,7 +275,8 @@ def redrawAll1(canvas, data):
 	if not data.gameOver:
 		#background 
 		for background in data.backgrounds:
-			background.draw(canvas)
+			if background.cx -background.width//2 < data.width:
+				background.draw(canvas)
 		# draw in canvas
 		if not data.gameOver:
 			drawGrid(data, data.grid, canvas)
@@ -333,9 +316,9 @@ def redrawAll2(canvas, data):
 		for obj in data.flyingObjects:
 			obj.drawShift(canvas, data)
 		if data.won:
-			x0, y0 = data.width//+data.shiftAmount, data.height//4,
+			x0, y0 = data.width//4+data.shiftAmount, data.height//4,
 			canvas.create_rectangle(x0, y0, x0 + data.width//2, y0 + data.height//2, fill="light blue")
-			canvas.create_text(data.width//2, data.height//3, text="You beat level" + str(data.level),\
+			canvas.create_text(data.width//2+data.shiftAmount, data.height//3, text="You beat level" + str(data.level),\
 				font="Arial 30")
 			time = str(data.timeElapsed//10)
 			canvas.create_text(data.width//2+data.shiftAmount, data.height*(2/3), text="Time: "+time+" secs",\
@@ -345,6 +328,15 @@ def redrawAll2(canvas, data):
 
 
 def keyPressed(event, data1, data2):
+	if event.keysym == "y":
+		if data1.won == True and data2.won == True:
+			replaceText("multiLevel:"+str(data1.level), "multiLevel:"+str(data1.level+1), data1.textFile)
+			init(data1)
+			init(data2)
+			data1.won = False
+			data2.won =False
+
+
 	keyPressedHelper(event, data1)
 	keyPressedHelper2(event, data2)
 
@@ -358,20 +350,32 @@ def redrawAll(canvas,data1, data2, data):
 	if data1.won == True and data2.won == True:
 		canvas.create_rectangle(0,0,data.width,data.height, fill="pink")
 		if data1.timeElapsed > data2.timeElapsed:
-			canvas.create_text(data1.width//2,data1.height//2 ,\
-				text="You Won!")
-			canvas.create_text(data.shiftAmount+data2.width//2, data2.height//2,\
-				text="You Lost")
+			canvas.create_text(data1.width//2,data1.height//4 ,\
+				text="You Won!", font="Arial 25")
+			canvas.create_text(data1.width//2,data1.height*(3/4) ,\
+				text="y for next level", font="Arial 25")
+			canvas.create_text(data2.shiftAmount+data2.width//2, data2.height//2,\
+				text="You Lost", font="Arial 25")
+			canvas.create_text(data2.shiftAmount+data2.width//2, data1.height*(3/4),\
+				text="y for next level", font="Arial 25")
+
 		if data1.timeElapsed < data2.timeElapsed:
 			canvas.create_text(data1.width//2,data1.height//2 ,\
-				text="You Lost")
-			canvas.create_text(data.shiftAmount+data2.width//2, data2.height//2,\
-				text="You Won!")		
-	redrawAll1(canvas, data1)
-	redrawAll2(canvas, data2)
+				text="You Lost", font="Arial 25")
+			canvas.create_text(data1.width//2,data1.height*(3/4) ,\
+				text="y for next level", font="Arial 25")
+			canvas.create_text(data2.shiftAmount+data2.width//2, data2.height//2,\
+				text="You Won!", font="Arial 25")		
+			canvas.create_text(data2.shiftAmount+data2.width//2,data1.height*(3/4),\
+				text="y for next level", font="Arial 25")
+	else:
+		redrawAll2(canvas, data2)
+		redrawAll1(canvas, data1)
+
 
 
 #this is not my orginal code https://www.cs.cmu.edu/~112-n19/notes/notes-animations-part2.html
+#modified run function
 def run1(width, height):
 	def redrawAllWrapper(canvas, data1, data2, data):
 		canvas.delete(ALL)
@@ -413,7 +417,7 @@ def run1(width, height):
 	# data2.timerDelay = 100 # milliseconds/10
 	root = Tk()
 	init(data1)
-	init(data2, data1.grid)
+	init(data2)
 
 	# create the root and the canvas
 	canvas = Canvas(root, width=data.width, height=data.height)
@@ -433,5 +437,4 @@ def run1(width, height):
 
 
 
-
-run1(576*2, 432)
+# run1(576*2, 432)

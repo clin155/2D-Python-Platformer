@@ -5,7 +5,9 @@ from procedural_generation import *
 from classes import *
 from enemies import *
 import copy, string, os
-# import multiplayer
+import multiplayer
+
+multi = False
 def getLevel(data):
 	file = open(data.textFile, "r")
 	for line in file.readlines():
@@ -35,7 +37,7 @@ def init(data):
 	data.cellHeight = int(data.height /data.visibleRows)
 	#values to be changed by level #CHANGE GAME LEVEL BEFORE SUBMITTING
 	data.numGhosts = 1
-	data.gameLength = 10
+	data.gameLength = 15
 	data.textFile = "data.txt"
 	data.backgroundImage = None
 	data.flyingObjectImage = None
@@ -81,9 +83,8 @@ def init(data):
 
 
 
-	#UNCOMMENT THESE
-	# createNewGhosts(data)
-	# createflyingObjects(data)
+	createNewGhosts(data)
+	createflyingObjects(data)
 
 
 
@@ -131,7 +132,7 @@ def mousePressed(event, data):
 			if clickedButton(data.multiButton, event):
 				data.mode = 2
 				data.modeScrn = False
-				multiplayer.run1(576*2, 432)
+				return "multiplayer"
 		if data.backButton != []:
 			if clickedButton(data.backButton, event):
 				data.gameIntro = True
@@ -170,6 +171,8 @@ def keyPressed(event, data):
 		if event.keysym == "n":
 				replaceText("level:"+str(data.level), "level:"+str(data.level+1), data.textFile)
 				init(data)
+				data.gameIntro = False
+				data.running = True
 				data.won = False
 	if event.keysym == "i":
 		replaceText("level:"+str(data.level), "level:0", data.textFile)
@@ -218,8 +221,8 @@ def timerFired(data):
 				data.ghosts = []
 			#CHANGE THIS
 			# #spawns the enemies ##################
-			# if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
-			#     createNewGhosts(data)
+			if data.timeElapsed % 50 == 0 and len(data.ghosts) == 0 and not data.player.climbing:
+			    createNewGhosts(data)
 			# ##################
 
 
@@ -252,20 +255,21 @@ def timerFired(data):
 
 			if data.player.hasPowerUp != None:
 				data.powerUpTime += 1
-				if data.powerUpTime % 100 == 0 and data.player.hasPowerUp =="jumpPower":
+				if data.powerUpTime % 50 == 0 and data.player.hasPowerUp =="jump":
 					data.powerUpTime = 0
 					data.player.reversePowerUp()
 					data.player.hasPowerUp = None
+					#50
 				if data.powerUpTime % 50 == 0 and data.player.hasPowerUp =="shield":
 					data.powerUpTime = 0
 					data.player.reversePowerUp()
 					data.player.hasPowerUp = None
 			#UNCOMMENT THIS
-			# if data.flyingObjects == []:
-			# 	data.addObjTime += 1
-			# 	if data.addObjTime % 50 == 0:
-			# 		data.addObjTime = 0
-			# 		createflyingObjects(data)
+			if data.flyingObjects == []:
+				data.addObjTime += 1
+				if data.addObjTime % 50 == 0:
+					data.addObjTime = 0
+					createflyingObjects(data)
 
 			data.player.checkForObstacle(data)
 			#removes extrablocks
@@ -308,12 +312,10 @@ def redrawAll(canvas, data):
 				ghost.draw(canvas,data.ghost)
 			for obj in data.flyingObjects:
 				obj.draw(canvas,data)
-			# for enemy in data.groundEnemies:
-			#     enemy.draw(canvas, data)
 			if data.won:
 				x0, y0 = data.width//4, data.height//4,
 				canvas.create_rectangle(x0, y0, x0 + data.width//2, y0 + data.height//2, fill="light blue")
-				canvas.create_text(data.width//2, data.height//3, text="You beat level" + str(data.level),\
+				canvas.create_text(data.width//2, data.height//3, text="You beat level" + str(data.level+1),\
 					font="Arial 30")
 				canvas.create_text(data.width//2, data.height*(2/3), text="press n for next level",\
 					font="Arial 20")
@@ -322,6 +324,7 @@ def redrawAll(canvas, data):
 
 
 #this is not my orginal code https://www.cs.cmu.edu/~112-n19/notes/notes-animations-part2.html
+#modified run function
 def run(width, height):
 	def redrawAllWrapper(canvas, data):
 		canvas.delete(ALL)
@@ -331,7 +334,10 @@ def run(width, height):
 		canvas.update()
 
 	def mousePressedWrapper(event, canvas, data):
-		mousePressed(event, data)
+		if mousePressed(event, data) == "multiplayer":
+			root.destroy()
+			multiplayer.run1(576*2, 432)
+			return None
 		redrawAllWrapper(canvas, data)
 
 	def keyPressedWrapper(event, canvas, data):
@@ -355,12 +361,15 @@ def run(width, height):
 	canvas = Canvas(root, width=data.width, height=data.height)
 	canvas.configure(bd=0, highlightthickness=0)
 	canvas.pack()
+
 	# set up events
 	root.bind("<Button-1>", lambda event:
 							mousePressedWrapper(event, canvas, data))
+
 	root.bind("<Key>", lambda event:
 							keyPressedWrapper(event, canvas, data))
 	timerFiredWrapper(canvas, data)
+
 	# and launch the app
 	root.mainloop()  # blocks until window is closed
 	print("quitted")
@@ -369,6 +378,4 @@ def run(width, height):
 
 
 run(768,576)
-
-
-
+exit()

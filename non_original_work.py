@@ -5,6 +5,8 @@
 	#I got the Image fromhttp://pngimg.com/imgs/fantasy/ghost/
 	#I got the enemy image from https://opengameart.org/content/zombie-and-skeleton-32x48
 	#i got background from https://www.brusheezy.com/textures/43311-blue-sky-texture
+	#i got the ice texture from https://www.curseforge.com/minecraft/mc-mods/ice-mod
+	
 from tkinter import *
 from PIL import Image
 import tkinter as tk

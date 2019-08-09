@@ -37,7 +37,6 @@ def legalBlock(data):
 	block = None 
 	while block == None or not isLegal(block, data):
 		block = createBlock(data)
-	print("Legal!")
 	addObsAndPowerUps(block,data)
 	return block
 def isLegal(block, data):

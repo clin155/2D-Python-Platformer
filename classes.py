@@ -7,28 +7,34 @@ class Player:
 		self.width = w
 		self.height = h
 		startcell = self.getStartCell(data,1)
+		#Player location
 		self.row = startcell[0]-1
 		self.col = startcell[1]
-		self.fallSpd = 20
 		self.maxCol = data.visibleCols//2 + 1
 		self.minCol = 1
 		self.minRow = 5
 		self.maxRow = data.visibleRows - 5
 		self.startRow = None
+
+		#movement booleans
 		self.jumping = False
 		self.falling = True
 		self.inDescent = False
-		self.jumpSpd = 20
 		self.climbing = False
 		self.inUpDownBlock = False
-		self.lowerBound = None
-		self.upperBound = None
-		self.inBounds = False
-		self.maxJump = 4
-		self.baseMaxJump = 3
-		self.hasPowerUp = None
 		self.inUpLeft = False
 		self.onTopOfLadder = False
+
+		#vertical scrolling values
+		self.lowerBound = None
+		self.upperBound = None
+
+		#jump constants
+		self.maxJump = 4
+		self.baseMaxJump = 3
+
+		#powerups
+		self.hasPowerUp = None
 		self.invincible = False
 
 	def getStartCell(self, data, col):
@@ -40,12 +46,12 @@ class Player:
 
 
 
-	def moveHorizontal(self, dx,grid,data):
+	def moveHorizontal(self, dx,grid,data, multiplayer=False):
 		self.col += dx
 		if self.checkForCollison(grid, data.firstVisibleCol, data):
 				self.col -= dx
 		if self.inUpDownBlock != True and self.inUpLeft != True and data.scroll==True:
-			return self.scrollHorizontal(dx, data)
+			return self.scrollHorizontal(dx, data, multiplayer)
 		return False
 	
 	def getBounds(self):
@@ -63,10 +69,8 @@ class Player:
 				self.climbing = True
 			#prevents player from escaping the ladder upwards
 			elif grid[self.row+1][self.col + col] == "ladder":
-				print("fuck")
 				self.onTopOfLadder = True
 				self.scrollVertical(-1, data)
-				# self.climbing = True
 				self.inDescent = False
 
 			else:
@@ -88,21 +92,24 @@ class Player:
 			data.gameOver = True
 
 
-	def scrollHorizontal(self, dx, data):
+	def scrollHorizontal(self, dx, data, multiplayer):
 		if self.col < self.minCol and data.firstVisibleCol > 0:
-			self.col -= dx
+			self.col = self.minCol
 			data.firstVisibleCol -= 1
-			for background in data.backgrounds:
+			if multiplayer == False:
+				for background in data.backgrounds:
 
-				background.scroll(data, -1, 0)
+					background.scroll(data, -1, 0)
 			return True
 		elif self.col < self.minCol:
-			self.col -= dx
+			self.col = self.minCol
 		elif self.col > self.maxCol:
-			self.col -= dx
+			self.col = self.maxCol
 			data.firstVisibleCol += 1
-			for background in data.backgrounds:
-				background.scroll(data, 1, 0)
+			if multiplayer == False:
+				for background in data.backgrounds:
+
+					background.scroll(data, 1, 0)
 			for obj in data.flyingObjects:
 				obj.move(data)
 			return True
