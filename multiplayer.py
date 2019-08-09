@@ -41,7 +41,7 @@ def init(data, time=0):
 	#values to be changed by level #CHANGE GAME LEVEL BEFORE SUBMITTING
 	data.backgrounds = []
 	data.numGhosts = 1
-	data.gameLength = 10
+	data.gameLength = 15
 	data.textFile = "data.txt"
 	data.backgroundImage = None
 	data.flyingObjectImage = None
@@ -254,7 +254,7 @@ def timerFiredHelper(data):
 			#UNCOMMENT THIS
 			if data.flyingObjects == []:
 				data.addObjTime += 1
-				if data.addObjTime % 50 == 0:
+				if data.addObjTime % 10 == 0:
 					data.addObjTime = 0
 					createflyingObjects(data)
 

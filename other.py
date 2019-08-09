@@ -291,7 +291,7 @@ def setLevelValuesM(data):
 		data.flyingObjectImage = createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "waterBall.png")
 	if data.level == 3:	
 		data.backgroundImage = "nightTime.png"
-		data.block = createImage(data, data.cellWidth, data.cellHeight, "rockBlock.png")
+		data.block = createImage(data, data.cellWidth, data.cellHeight, "glass.png")
 		data.flyingObjectImage =  createImage(data, int(data.cellWidth*1.5), int(data.cellHeight*1.5), "boulder.png")
 
 	if data.level == 4:	

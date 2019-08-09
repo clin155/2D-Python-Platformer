@@ -134,6 +134,9 @@ class Player:
 		if data.firstVisibleRow < self.lowerBound or\
 			data.firstVisibleRow+data.visibleRows > self.upperBound:
 			data.firstVisibleRow -= dy
+		else:
+			for flyingObject in data.flyingObjects:
+				flyingObject.cy -= (data.cellHeight*dy)
 
 
 

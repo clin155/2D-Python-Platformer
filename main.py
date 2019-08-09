@@ -267,7 +267,7 @@ def timerFired(data):
 			#UNCOMMENT THIS
 			if data.flyingObjects == []:
 				data.addObjTime += 1
-				if data.addObjTime % 50 == 0:
+				if data.addObjTime % 10 == 0:
 					data.addObjTime = 0
 					createflyingObjects(data)
 
